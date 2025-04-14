@@ -39,7 +39,7 @@ export const formatDate = (dateString: string) => {
     ];
     const month = months[bakuDate.getMonth()];
 
-    return `${day} ${month} ${year} - ${hours}:${minutes}`;
+    return `${day} ${month} ${year} ${hours}:${minutes}`;
   } catch (error) {
     return 'Tarix məlum deyil';
   }

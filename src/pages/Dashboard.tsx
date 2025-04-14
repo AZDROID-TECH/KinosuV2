@@ -142,9 +142,6 @@ const Dashboard = () => {
       // API'den dönen yeni filmi al (ID'si ile birlikte)
       const newAddedMovie: Movie = await movieAPI.addMovie(movieData);
       
-      // API cavabını logla
-      console.log('Yeni əlavə edilmiş film API cavabı:', newAddedMovie);
-
       // Dönen objenin geçerli olup olmadığını kontrol et (en azından bir id'si olmalı)
       if (!newAddedMovie || typeof newAddedMovie.id === 'undefined') {
         console.error('API-dən etibarsız film obyekti qayıtdı:', newAddedMovie);
@@ -631,6 +628,32 @@ const Dashboard = () => {
                     }}
                   >
                     <i className='bx bx-trash' style={{ fontSize: '18px' }}></i>
+                  </button>
+                  {/* Yorum Butonu */}
+                  <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="comment-button"
+                      style={{
+                        position: 'absolute',
+                        top: '45px', // Silme butonunun altına yerleştir
+                        right: '8px',
+                        background: theme.palette.action.hover, // Tema ile uyumlu arkaplan
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '30px',
+                        height: '30px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        transition: 'all 0.2s',
+                        color: theme.palette.text.secondary, // Default icon color
+                      }}
+                  >
+                    <i className='bx bx-message-rounded-dots' style={{ fontSize: '18px' }}></i>
                   </button>
                   <CardMedia
                     component="img"

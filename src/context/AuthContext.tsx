@@ -8,6 +8,7 @@ interface AuthContextType {
   username: string | null;
   email: string | null;
   avatar: string | null;
+  isAdmin: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -34,6 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const checkAuthStatus = async (): Promise<boolean> => {
@@ -47,6 +49,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setAvatar(null);
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      setIsAdmin(false);
       return false;
     }
 
@@ -65,6 +68,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setAvatar(null);
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      setIsAdmin(false);
       return false;
     }
   };
@@ -74,8 +78,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const profile = await userAPI.getProfile();
       setEmail(profile.email);
       setAvatar(profile.avatar);
+      setIsAdmin(profile.isAdmin || false);
     } catch (error) {
       console.error('Profil məlumatlarını yükləmə xətası:', error);
+      setIsAdmin(false);
     }
   };
 
@@ -117,6 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUsername(null);
     setEmail(null);
     setAvatar(null);
+    setIsAdmin(false);
     navigate('/login'); 
   };
 
@@ -128,6 +135,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         username, 
         email,
         avatar,
+        isAdmin,
         login, 
         logout,
         refreshProfile,

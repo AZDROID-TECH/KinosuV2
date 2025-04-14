@@ -11,6 +11,8 @@ import {
   alpha,
   Avatar,
   Skeleton,
+  ButtonGroup,
+  IconButton,
 } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
@@ -28,7 +30,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { darkMode, toggleDarkMode } = useCustomTheme();
-  const { isLoggedIn, username, avatar, logout, isLoadingAuth } = useAuth();
+  const { isLoggedIn, username, avatar, logout, isLoadingAuth, isAdmin } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
 
@@ -111,33 +113,52 @@ const Header = () => {
         </Typography>
 
         <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-          <button
-            onClick={toggleDarkMode}
-            className="theme-toggle"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              color: isSimpleHeader ? theme.palette.text.primary : '#fff',
-              transition: 'transform 0.3s ease, color 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)';
-              e.currentTarget.style.color = darkMode ? theme.palette.secondary.light : theme.palette.primary.light;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.color = isSimpleHeader ? theme.palette.text.primary : '#fff';
+          <ButtonGroup 
+            variant="text" 
+            aria-label="text button group"
+            sx={{ 
+              bgcolor: isSimpleHeader ? 'transparent' : alpha(theme.palette.common.white, 0.1),
+              borderRadius: 2,
+              boxShadow: isSimpleHeader ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
             }}
           >
-            <i className={`bx ${darkMode ? 'bxs-sun' : 'bxs-moon'}`} style={{ fontSize: '22px' }}></i>
-          </button>
+            <IconButton
+              onClick={toggleDarkMode}
+              className="theme-toggle"
+              sx={{
+                color: isSimpleHeader ? theme.palette.text.primary : '#fff',
+                padding: '8px',
+                transition: 'transform 0.3s ease, color 0.3s ease',
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                  color: darkMode ? theme.palette.secondary.light : theme.palette.primary.light,
+                  bgcolor: 'transparent',
+                }
+              }}
+            >
+              <i className={`bx ${darkMode ? 'bxs-sun' : 'bxs-moon'}`} style={{ fontSize: '22px' }}></i>
+            </IconButton>
+            {isLoggedIn && !isLoadingAuth && (
+              <IconButton
+                onClick={() => { /* Notification logic will be added later */ }}
+                sx={{
+                  color: isSimpleHeader ? theme.palette.text.primary : '#fff',
+                  padding: '8px',
+                  transition: 'transform 0.3s ease, color 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    color: darkMode ? theme.palette.secondary.light : theme.palette.primary.light,
+                    bgcolor: 'transparent',
+                  }
+                }}
+              >
+                <i className='bx bxs-bell' style={{ fontSize: '22px' }}></i>
+              </IconButton>
+            )}
+          </ButtonGroup>
 
           {isLoadingAuth ? (
-            <Skeleton variant="circular" width={35} height={35} sx={{ mr: 1 }} />
+            <Skeleton variant="circular" width={35} height={35} sx={{ ml: { xs: 0, sm: 0.5 } }} />
           ) : isLoggedIn ? (
             <>
               <Box
@@ -149,8 +170,9 @@ const Header = () => {
                   p: 0.5,
                   borderRadius: 2,
                   transition: 'all 0.3s ease',
+                  ml: { xs: 0, sm: 0.5 },
                   '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.15)',
+                    bgcolor: alpha(theme.palette.common.white, 0.15),
                     transform: 'translateY(-2px)',
                   },
                 }}
@@ -234,6 +256,33 @@ const Header = () => {
                   }}></i>
                   Profilim
                 </MenuItem>
+                {isAdmin && (
+                  <MenuItem 
+                    onClick={() => {
+                      handleMenuClose();
+                      navigate('/admin');
+                    }} 
+                    sx={{ 
+                      py: 1.2,
+                      transition: 'all 0.2s ease',
+                      color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                      '&:hover': {
+                        backgroundColor: darkMode 
+                          ? alpha('#673ab7', 0.1)
+                          : alpha('#673ab7', 0.05),
+                        color: darkMode ? '#b39ddb' : '#673ab7',
+                      }
+                    }}
+                  >
+                    <i className='bx bx-shield-quarter' style={{ 
+                      marginRight: '8px', 
+                      fontSize: '20px', 
+                      color: darkMode ? '#9575cd' : '#7e57c2',
+                      transition: 'color 0.2s ease',
+                    }}></i>
+                    Admin Paneli
+                  </MenuItem>
+                )}
                 <Divider sx={{ 
                   my: 0.5,
                   borderColor: darkMode 

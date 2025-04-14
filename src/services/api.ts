@@ -33,6 +33,46 @@ interface UserProfile {
   };
 }
 
+// UserForAdmin interface\'i tanımla (veya ayrı bir types dosyasından import et)
+interface UserForAdmin {
+  id: number;
+  username: string;
+  email: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  is_admin: boolean;
+}
+
+// Açık profil bilgileri için interface
+interface PublicUserProfile {
+  id: number;
+  username: string;
+  avatar: string | null;
+  createdAt: string;
+  isOnline: boolean;
+  stats: {
+    watchlist: number;
+    watching: number;
+    watched: number;
+    total: number;
+  };
+  latestMovie: {
+    title: string;
+    poster: string;
+    imdb_rating: number;
+    status: string;
+    created_at: string;
+  } | null;
+  topRatedMovies: Array<{
+    title: string;
+    poster: string;
+    imdb_rating: number;
+    user_rating: number;
+    status: string;
+    created_at: string;
+  }>;
+}
+
 const getHeaders = () => {
   const token = localStorage.getItem('token');
   return {
@@ -161,6 +201,33 @@ export const userAPI = {
     }
   },
 
+  // Açık profil bilgileri alma
+  getPublicProfile: async (userId: number | string): Promise<PublicUserProfile> => {
+    try {
+      const response = await fetch(`/api/user/profile/${userId}`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('Açıq profil məlumatları alınarkən xəta:', error);
+      throw error;
+    }
+  },
+
+  getPublicProfileByUsername: async (username: string): Promise<PublicUserProfile> => {
+    try {
+      const response = await fetch(`/api/user/profile/username/${username}`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('İstifadəçi adına görə profil məlumatları alınarkən xəta:', error);
+      throw error;
+    }
+  },
+
   updateProfile: async (data: Partial<UserProfile>) => {
     try {
       const response = await fetch(`/api/user/profile`, {
@@ -208,6 +275,60 @@ export const userAPI = {
       return await handleApiResponse(response);
     } catch (error) {
       console.error('Avatar silmə xətası:', error);
+      throw error;
+    }
+  },
+  
+  // --- Admin fonksiyonları tekrar eklendi ---
+  getAllUsers: async (): Promise<UserForAdmin[]> => {
+    try {
+      const response = await fetch(`/api/user/all`, { // Route değiştirildi: /api/users -> /api/user/all
+        headers: getHeaders(),
+      });
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('Bütün istifadəçilər alınarkən xəta:', error);
+      throw error;
+    }
+  },
+
+  setUserAdminStatus: async (userId: number, isAdmin: boolean) => {
+    try {
+      const response = await fetch(`/api/user/${userId}/admin`, { // Route değiştirildi: /api/users/:userId/admin -> /api/user/:userId/admin
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ isAdmin }),
+      });
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error(`Admin statusu yenilənərkən xəta (ID: ${userId}):`, error);
+      throw error;
+    }
+  },
+  
+  updateUser: async (userId: number, data: {username?: string, email?: string}) => {
+    try {
+      const response = await fetch(`/api/user/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+      });
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error(`İstifadəçi məlumatları yenilənərkən xəta (ID: ${userId}):`, error);
+      throw error;
+    }
+  },
+  
+  deleteUser: async (userId: number) => {
+    try {
+      const response = await fetch(`/api/user/${userId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error(`İstifadəçi silinərkən xəta (ID: ${userId}):`, error);
       throw error;
     }
   },

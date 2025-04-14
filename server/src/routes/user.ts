@@ -1,8 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { getProfile, uploadAvatar, deleteAvatar } from '../controllers/userController';
+import { getProfile, uploadAvatar, deleteAvatar, getAllUsers, setUserAdminStatus, updateUser, deleteUser, getPublicProfile } from '../controllers/userController';
 import { authenticateToken } from '../middleware/auth';
+import { adminAuth } from '../middleware/adminAuth';
 
 const router = express.Router();
 
@@ -29,10 +30,28 @@ const upload = multer({
 // Profil bilgilerini getir
 router.get('/profile', authenticateToken, getProfile);
 
+// Açık profil bilgilerini getir (authentication gerekmiyor)
+// ÖNEMLİ: Sıralama önemli! Önce username rotasını tanımla, sonra userId rotasını
+router.get('/profile/username/:username', getPublicProfile);
+router.get('/profile/:userId', getPublicProfile);
+
 // Avatar yükle
 router.post('/avatar', authenticateToken, upload.single('avatar'), uploadAvatar);
 
 // Avatar sil
 router.delete('/avatar', authenticateToken, deleteAvatar);
+
+// --- Admin Route'ları Tekrar Aktif Edildi ---
+// Bütün istifadəçiləri gətir (Admin Yetkisi Lazımdır)
+router.get('/all', authenticateToken, adminAuth, getAllUsers);
+
+// İstifadəçinin admin statusunu dəyişdir (Admin Yetkisi Lazımdır)
+router.put('/:userId/admin', authenticateToken, adminAuth, setUserAdminStatus);
+
+// İstifadəçi məlumatlarını yenilə (Admin Yetkisi Lazımdır)
+router.put('/:userId', authenticateToken, adminAuth, updateUser);
+
+// İstifadəçini sil (Admin Yetkisi Lazımdır)
+router.delete('/:userId', authenticateToken, adminAuth, deleteUser);
 
 export default router; 
