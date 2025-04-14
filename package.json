@@ -1,0 +1,51 @@
+{
+  "name": "kinosu",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "cd server && npm run dev",
+    "dev:full": "concurrently --kill-others \"npm:dev:server\" \"wait-on tcp:5000 && npm run dev\"",
+    "build": "tsc && vite build",
+    "build:server": "npm run build && npm run copy:dist",
+    "copy:dist": "node scripts/copy-dist.mjs",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build:full": "npm run build:server && cd server && npm run prebuild && npm run build",
+    "serve": "cd server && npm start"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.10",
+    "@mui/material": "^5.15.10",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.8.1",
+    "axios": "^1.6.7",
+    "boxicons": "^2.1.4",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-easy-crop": "^5.4.1",
+    "react-image-crop": "^11.0.7",
+    "react-router-dom": "^6.22.1",
+    "react-tsparticles": "^2.12.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^7.6.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "nodemon": "^2.0.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0",
+    "wait-on": "^8.0.3"
+  }
+}
