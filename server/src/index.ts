@@ -12,6 +12,7 @@ import path from 'path';
 import fs from 'fs';
 import { TABLES, getClient } from './utils/supabase';
 import { logger } from './utils/logger';
+import axios from 'axios';
 
 // .env faylını yüklə - main dotenv yüklemesi
 dotenv.config();
@@ -112,5 +113,30 @@ if (fs.existsSync(distPath)) {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  // Logları devre dışı bıraktık
+  logger.info(`Server ${PORT} portunda çalışıyor`);
+
+  // --- Render Free Tier Uyanıq Tutma --- 
+  if (process.env.NODE_ENV === 'production' && process.env.CLIENT_URL) {
+    const PING_INTERVAL_MS = 5 * 60 * 1000; // 5 dəqiqə
+    const targetUrl = process.env.CLIENT_URL;
+
+    logger.info(`Render uyanıq tutma servisi ${targetUrl} üçün ${PING_INTERVAL_MS / 60000} dəqiqə intervalı ilə aktiv edildi.`);
+
+    const pingInterval = setInterval(async () => {
+      try {
+        const response = await axios.get(targetUrl);
+        logger.info(`Render uyanıq tutma: ${targetUrl} uğurla ping edildi (Status: ${response.status}).`);
+      } catch (error: any) {
+        logger.error(`Render uyanıq tutma zamanı xəta: ${targetUrl} - ${error.message}`);
+      }
+    }, PING_INTERVAL_MS);
+
+    // Proqram dayandırıldıqda intervalı təmizlə (nəzəri olaraq)
+    process.on('SIGTERM', () => {
+      clearInterval(pingInterval);
+      logger.info('Render uyanıq tutma intervalı SIGTERM siqnalı ilə təmizləndi.');
+      process.exit(0);
+    });
+  }
+  // --- Render Free Tier Uyanıq Tutma Sonu ---
 }); 
