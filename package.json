@@ -19,6 +19,7 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.10",
     "@mui/material": "^5.15.10",
+    "@supabase/supabase-js": "^2.49.4",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
     "axios": "^1.6.7",
@@ -30,6 +31,7 @@
     "react-easy-crop": "^5.4.1",
     "react-image-crop": "^11.0.7",
     "react-router-dom": "^6.22.1",
+    "react-toastify": "^11.0.5",
     "react-tsparticles": "^2.12.2"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-// Kullanılmayan API_URL kaldırıldı - backend ve frontend tek sunucuda çalıştığı için tüm API çağrıları göreceli URL kullanıyor
+// backend ve frontend tek sunucuda çalıştığı için tüm API çağrıları göreceli URL kullanıyor
 
 interface LoginData {
   username: string;
@@ -23,10 +23,11 @@ interface MovieData {
 interface UserProfile {
   id: number;
   username: string;
-  email: string;
-  avatar: string | null;
+  email: string | null;
+  avatar_url: string | null;
   createdAt: string;
-  watchlist: {
+  isAdmin: boolean;
+  watchlist?: {
     watchlist: number;
     watching: number;
     watched: number;
@@ -71,6 +72,13 @@ interface PublicUserProfile {
     status: string;
     created_at: string;
   }>;
+}
+
+// Admin Statistikaları üçün interface
+interface AdminStats {
+    userCount: number;
+    pendingCommentCount: number;
+    // Gələcəkdə başqa statistika sahələri...
 }
 
 const getHeaders = () => {
@@ -279,6 +287,21 @@ export const userAPI = {
     }
   },
   
+  // Şifrəni dəyişdir
+  changePassword: async (passwords: { currentPassword: string; newPassword: string }) => {
+    try {
+      const response = await fetch(`/api/user/change-password`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(passwords),
+      });
+      return await handleApiResponse(response);
+    } catch (error) {
+      console.error('Şifrə dəyişdirmə xətası:', error);
+      throw error;
+    }
+  },
+  
   // --- Admin fonksiyonları tekrar eklendi ---
   getAllUsers: async (): Promise<UserForAdmin[]> => {
     try {
@@ -404,4 +427,21 @@ export const movieAPI = {
       throw error;
     }
   },
+};
+
+// Yeni Stats API
+export const statsAPI = {
+    getAdminStats: async (): Promise<AdminStats> => {
+        try {
+            const response = await fetch(`/api/stats/admin`, {
+                headers: getHeaders(), // Admin auth üçün token lazımdır
+            });
+            return await handleApiResponse(response);
+        } catch (error) {
+            console.error('Admin statistikaları alınarkən xəta:', error);
+            // Default dəyərlər qaytaraq ki, UI tam qırılmasın
+            // throw error; // Əvəzinə:
+            return { userCount: 0, pendingCommentCount: 0 }; 
+        }
+    },
 }; 

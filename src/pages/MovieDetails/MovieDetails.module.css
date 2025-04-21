@@ -1,0 +1,16 @@
+/* MovieDetails.module.css */
+
+.movie-poster {
+  /* Postere özel ek stiller gerekirse buraya */
+  /* Örneğin hafif bir animasyon */
+  transition: transform 0.3s ease-in-out;
+}
+
+.movie-poster:hover {
+  /* transform: scale(1.03); */ /* İsteğe bağlı hover efekti */
+}
+
+.genre-chip {
+  /* Tür chip'lerine özel stil */
+  cursor: default; /* Tıklanabilir olmadığını belirtir */
+}

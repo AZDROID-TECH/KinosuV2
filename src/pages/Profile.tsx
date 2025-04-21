@@ -1,6 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, Container, Grid, Avatar, Button, Divider, Skeleton, CircularProgress } from '@mui/material';
-import { useTheme as useMuiTheme } from '@mui/material/styles';
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Container, 
+  Grid,
+  Avatar, 
+  Button, 
+  Divider, 
+  Skeleton, 
+  CircularProgress,
+  Input,
+  IconButton,
+  Tooltip,
+  Stack,
+  Chip,
+  TextField,
+  InputAdornment,
+  useTheme as useMuiTheme,
+  alpha
+} from '@mui/material';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
@@ -8,11 +27,19 @@ import PersonIcon from '@mui/icons-material/Person';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import EmailIcon from '@mui/icons-material/Email';
+import WatchLaterIcon from '@mui/icons-material/WatchLater';
+import EditIcon from '@mui/icons-material/Edit';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import dayjs from 'dayjs';
+import { formatDate } from '../utils/movieHelpers';
+
+// React Toastify importları
+import { toast } from 'react-toastify';
 
 // Resim Kırpma Modalı için gerekli bileşenler
 import Crop from 'react-easy-crop';
@@ -26,10 +53,10 @@ import { Point, Area } from 'react-easy-crop/types';
 interface UserProfileData {
   id: number;
   username: string;
-  email: string;
-  avatar: string | null;
+  email: string | null;
+  avatar_url: string | null;
   createdAt: string;
-  watchlist: {
+  watchlist?: {
     watchlist: number;
     watching: number;
     watched: number;
@@ -93,7 +120,7 @@ const getCroppedImg = (
 const Profile = () => {
   const { darkMode } = useCustomTheme();
   const muiTheme = useMuiTheme();
-  const { username, refreshProfile, updateAvatar } = useAuth();
+  const { username, refreshProfile, updateAvatar, userId } = useAuth();
   
   const [profileData, setProfileData] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,6 +133,17 @@ const Profile = () => {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  // Şifrə görünürlüyü üçün state'lər
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Şifrə inputları üçün state'lər
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Profil bilgilerini yükle
   const loadProfile = useCallback(async () => {
@@ -168,35 +206,171 @@ const Profile = () => {
       // Modalı kapat
       setOpenCropModal(false);
       setSelectedFile(null);
+      toast.success('Profil şəkli uğurla yeniləndi.');
     } catch (err) {
       console.error('Avatar yükləmə xətası:', err);
       setError('Avatar yükləmə zamanı xəta baş verdi');
+      toast.error('Avatar yüklənərkən xəta baş verdi.');
     } finally {
       setAvatarLoading(false);
     }
   };
 
-  // Avatar'ı sil
+  // Avatar'ı sil (Custom Toast ilə)
   const deleteAvatar = async () => {
-    if (!window.confirm('Avatarınızı silmək istədiyinizə əminsiniz?')) return;
+    let confirmationToastId: ReturnType<typeof toast> | null = null; // Toast ID üçün tip
     
+    const performDelete = async () => {
     try {
       setAvatarLoading(true);
       await userAPI.deleteAvatar();
-      
-      // AuthContext'te avatar'ı temizle
       updateAvatar(null);
-      
-      // Profil bilgilerini yenile
       await loadProfile();
       await refreshProfile();
+        if (confirmationToastId) toast.dismiss(confirmationToastId);
+        toast.success('Avatar uğurla silindi.'); 
     } catch (err) {
       console.error('Avatar silmə xətası:', err);
       setError('Avatar silmə zamanı xəta baş verdi');
+        toast.error('Avatar silinərkən xəta baş verdi.');
     } finally {
       setAvatarLoading(false);
     }
   };
+
+    const ConfirmationDialog = ({ closeToast }: { closeToast: () => void }) => (
+      <Box sx={{ p: 1 }}>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Avatarınızı silmək istədiyinizə əminsinizmi?
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Button 
+            size="small" 
+            variant="outlined" 
+            onClick={closeToast}
+            disabled={avatarLoading}
+          >
+            Xeyr
+          </Button>
+          <Button 
+            size="small" 
+            variant="contained" 
+            color="error" 
+            onClick={() => {
+              performDelete(); 
+            }}
+            disabled={avatarLoading}
+          >
+            {avatarLoading ? <CircularProgress size={20} color="inherit" /> : 'Bəli, Sil'}
+          </Button>
+        </Box>
+      </Box>
+    );
+
+    confirmationToastId = toast.warning(
+      ({ closeToast }) => <ConfirmationDialog closeToast={closeToast} />,
+      {
+        position: 'top-center',
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+      }
+    );
+  };
+
+  // Şifrə dəyişdirmə funksiyası
+  const handleChangePassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); // Formun default davranışını dayandır
+    setPasswordLoading(true);
+    setError(null); // Əvvəlki xətaları təmizlə
+
+    // Sahələrin boş olub olmadığını yoxla
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('Bütün şifrə sahələrini doldurun.');
+      setPasswordLoading(false);
+      return;
+    }
+
+    // Yeni şifrələrin uyğunluğunu yoxla
+    if (newPassword !== confirmPassword) {
+      toast.error('Yeni şifrələr uyğun gəlmir.');
+      setPasswordLoading(false);
+      return;
+    }
+
+    // Zəif şifrə yoxlaması (məsələn, minimum uzunluq)
+    if (newPassword.length < 6) {
+      toast.error('Yeni şifrə ən az 6 simvol olmalıdır.');
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      const response = await userAPI.changePassword({
+        currentPassword,
+        newPassword,
+      });
+      toast.success(response.message || 'Şifrə uğurla dəyişdirildi.');
+      // Sahələri təmizlə
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      console.error('Şifrə dəyişdirmə xətası:', err);
+      const errorMessage = err.error || 'Şifrə dəyişdirilərkən xəta baş verdi.';
+      setError(errorMessage); // Ümumi xəta mesajı üçün
+      toast.error(errorMessage);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // Şifrə görünürlüyünü dəyişdirən funksiyalar
+  const handleClickShowPassword = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setter((show) => !show);
+  };
+
+  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Stack spacing={4} alignItems="center">
+          <Skeleton variant="circular" width={160} height={160} />
+          <Skeleton variant="text" width="40%" height={40} />
+          <Skeleton variant="text" width="60%" height={24} />
+          <Skeleton variant="rectangular" width="80%" height={100} sx={{ borderRadius: 2 }} />
+          <Skeleton variant="rectangular" width="80%" height={200} sx={{ borderRadius: 2 }} />
+        </Stack>
+      </Container>
+    );
+  }
+
+  if (error || !profileData) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4, 
+            borderRadius: 3, 
+            textAlign: 'center',
+            bgcolor: alpha(muiTheme.palette.error.light, 0.1)
+          }}
+        >
+          <Typography variant="h5" color="error" gutterBottom>
+            {error || 'Profil məlumatları tapılmadı'}
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            Profil məlumatlarınızı yükləyərkən problem yarandı. Zəhmət olmasa daha sonra yenidən cəhd edin.
+          </Typography>
+        </Paper>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -204,351 +378,262 @@ const Profile = () => {
         <Paper 
           elevation={0}
           sx={{ 
-            p: 2, 
+            p: 1.5,
             mb: 3, 
-            bgcolor: 'error.main', 
-            color: 'white',
-            borderRadius: 2 
+            bgcolor: alpha(muiTheme.palette.error.main, 0.1), 
+            color: muiTheme.palette.error.dark,
+            border: `1px solid ${alpha(muiTheme.palette.error.main, 0.3)}`,
+            borderRadius: 2,
+            textAlign: 'center'
           }}
         >
-          <Typography>{error}</Typography>
+          <Typography variant="body2">{error}</Typography>
         </Paper>
       )}
       
       <Grid container spacing={3}>
-        {/* Profil Kartı */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={5}>
           <Paper 
-            elevation={3}
+            elevation={0}
             sx={{
+              width: '100%', 
               p: 3,
-              height: '100%',
               borderRadius: 3,
-              background: darkMode 
-                ? 'rgba(30, 30, 40, 0.8)'
-                : 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: darkMode 
-                ? '0 8px 32px rgba(0, 0, 0, 0.3)'
-                : '0 8px 32px rgba(0, 0, 0, 0.1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
+              textAlign: 'center',
+              background: darkMode ? alpha(muiTheme.palette.grey[900], 0.5) : alpha(muiTheme.palette.primary.light, 0.05),
+              border: `1px solid ${muiTheme.palette.divider}`,
+              position: 'relative',
+              height: '100%'
             }}
           >
-            {loading ? (
-              <>
-                <Skeleton 
-                  variant="circular" 
-                  width={150} 
-                  height={150} 
-                  sx={{ mb: 2 }} 
-                />
-                <Skeleton variant="text" width="60%" height={30} sx={{ mb: 1 }} />
-                <Skeleton variant="text" width="40%" height={24} sx={{ mb: 2 }} />
-                <Skeleton variant="rectangular" width="100%" height={40} sx={{ mb: 1 }} />
-                <Skeleton variant="rectangular" width="100%" height={40} />
-              </>
-            ) : (
-              <>
-                <Box sx={{ position: 'relative', mb: 3 }}>
+            <Box sx={{ position: 'relative', display: 'inline-block', mb: 1 }}>
                   <Avatar
-                    src={profileData?.avatar || undefined}
+                src={profileData.avatar_url || undefined}
+                alt={profileData.username}
                     sx={{
-                      width: 150,
-                      height: 150,
-                      bgcolor: darkMode ? '#9c27b0' : '#3f51b5',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-                      border: '4px solid',
-                      borderColor: darkMode ? 'rgba(156, 39, 176, 0.5)' : 'rgba(63, 81, 181, 0.5)',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    {!profileData?.avatar && (
-                      <PersonIcon sx={{ fontSize: 80 }} />
-                    )}
+                  width: 160, 
+                  height: 160, 
+                  border: `4px solid ${muiTheme.palette.background.paper}`,
+                  boxShadow: `0 6px 20px ${alpha(muiTheme.palette.common.black, 0.15)}`,
+                  mx: 'auto'
+                }}
+              >
+                {!profileData.avatar_url && <PersonIcon sx={{ fontSize: 90 }} />}
                   </Avatar>
-                  
                   {avatarLoading && (
-                    <Box 
-                      sx={{ 
-                        position: 'absolute', 
-                        top: 0, 
-                        left: 0, 
-                        right: 0, 
-                        bottom: 0, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        borderRadius: '50%'
-                      }}
-                    >
-                      <CircularProgress color="secondary" />
-                    </Box>
+                  <CircularProgress 
+                    size={170} 
+                    thickness={2} 
+                    sx={{ position: 'absolute', top: -5, left: -5, zIndex: 1, color: muiTheme.palette.primary.light }} 
+                  />
                   )}
                 </Box>
                 
-                <Typography 
-                  variant="h4" 
-                  gutterBottom
-                  sx={{ 
-                    color: darkMode ? '#bb86fc' : '#3f51b5',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                  }}
-                >
-                  {profileData?.username}
-                </Typography>
-                
                 <Box 
                   sx={{ 
                     display: 'flex',
-                    alignItems: 'center',
+                justifyContent: 'center', 
                     gap: 1,
-                    mb: 3
-                  }}
-                >
-                  <CalendarMonthIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    {profileData?.createdAt 
-                      ? `Qoşuldu: ${dayjs(profileData.createdAt).format('DD.MM.YYYY')}`
-                      : 'Qeydiyyat tarixi mövcud deyil'}
-                  </Typography>
-                </Box>
-                
-                <Box 
-                  sx={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    mb: 3,
-                    alignSelf: 'flex-start'
-                  }}
-                >
-                  <EmailIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    {profileData?.email || 'Email mövcud deyil'}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ width: '100%', mt: 1 }}>
-                  <input
-                    accept="image/*"
-                    id="avatar-upload"
-                    type="file"
-                    hidden
-                    onChange={handleFileChange}
-                  />
-                  <label htmlFor="avatar-upload">
+                mb: 2,
+                flexWrap: 'wrap'
+              }}
+            >
+              {/* Dəyişdir Düyməsi (Standart input ilə) */}
                     <Button
-                      component="span"
                       variant="contained"
                       color="primary"
-                      startIcon={<PhotoCamera />}
-                      fullWidth
-                      sx={{ 
-                        mb: 2,
-                        borderRadius: 2,
-                        py: 1,
-                        background: darkMode 
-                          ? 'linear-gradient(45deg, #9c27b0 0%, #673ab7 100%)'
-                          : 'linear-gradient(45deg, #3f51b5 0%, #673ab7 100%)',
-                        boxShadow: darkMode 
-                          ? '0 4px 20px rgba(156, 39, 176, 0.3)'
-                          : '0 4px 20px rgba(63, 81, 181, 0.3)',
-                      }}
-                    >
-                      Profil şəkli yüklə
+                size="small"
+                component="label" // Input'u trigger etmək üçün label kimi davranır
+                startIcon={<PhotoCamera fontSize="inherit" />}
+                disabled={avatarLoading}
+                htmlFor="avatar-upload-input" // Input'a bağlamaq üçün
+              >
+                Dəyişdir
+                {/* Standart HTML input, görünməz */}
+                <input 
+                  type="file"
+                  accept="image/*"
+                  id="avatar-upload-input"
+                  hidden // Və ya style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                  disabled={avatarLoading}
+                />
                     </Button>
-                  </label>
                   
-                  {profileData?.avatar && (
+              {profileData.avatar_url && (
                     <Button
                       variant="outlined"
+                  size="small"
                       color="error"
-                      startIcon={<DeleteIcon />}
-                      fullWidth
+                  startIcon={<DeleteIcon fontSize="inherit" />}
                       onClick={deleteAvatar}
-                      sx={{ borderRadius: 2, py: 1 }}
+                  disabled={avatarLoading}
                     >
-                      Şəkli sil
+                  {avatarLoading ? <CircularProgress size={16} color="inherit" /> : 'Sil'}
                     </Button>
                   )}
                 </Box>
-              </>
-            )}
+
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 0.5 }}>
+              {profileData.username}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <EmailIcon fontSize="inherit" sx={{ mr: 0.5, opacity: 0.7 }} /> {profileData.email}
+            </Typography>
+            <Chip 
+              icon={<CalendarMonthIcon fontSize="small" />} 
+              label={`Üzv: ${formatDate(profileData.createdAt)}`}
+              size="small"
+              variant="filled"
+              color="secondary"
+              sx={{ 
+                bgcolor: darkMode ? alpha(muiTheme.palette.secondary.dark, 0.3) : alpha(muiTheme.palette.secondary.light, 0.3),
+                color: darkMode ? muiTheme.palette.secondary.light : muiTheme.palette.secondary.dark,
+                border: 'none',
+                fontSize: '0.75rem'
+              }}
+            />
           </Paper>
         </Grid>
         
-        {/* İzleme Listesi İstatistikleri */}
-        <Grid item xs={12} md={8}>
-          <Paper 
-            elevation={3}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              background: darkMode 
-                ? 'rgba(30, 30, 40, 0.8)'
-                : 'rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: darkMode 
-                ? '0 8px 32px rgba(0, 0, 0, 0.3)'
-                : '0 8px 32px rgba(0, 0, 0, 0.1)',
-              height: '100%',
-            }}
-          >
-            <Typography 
-              variant="h5" 
-              gutterBottom
-              sx={{ 
-                color: darkMode ? '#bb86fc' : '#3f51b5',
-                fontWeight: 'bold',
-                mb: 3
-              }}
-            >
-              İzləmə siyahısı statistikası
-            </Typography>
-            
-            {loading ? (
-              <>
-                <Skeleton variant="rectangular" height={70} sx={{ mb: 2, borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={70} sx={{ mb: 2, borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={70} sx={{ borderRadius: 2 }} />
-              </>
-            ) : (
-              <Box>
-                <Box 
-                  sx={{ 
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    bgcolor: darkMode ? 'rgba(244, 143, 177, 0.15)' : 'rgba(244, 143, 177, 0.1)',
-                    p: 2,
-                    borderRadius: 2,
-                    mb: 2
+        <Grid item xs={12} md={7}>
+           <Paper elevation={0} sx={{ width: '100%', p: 2.5, borderRadius: 3, border: `1px solid ${muiTheme.palette.divider}`, height: '100%' }}>
+             <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>Hesab Ayarları</Typography>
+             
+             <Stack spacing={2} component="form" noValidate autoComplete="off" onSubmit={handleChangePassword}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                  <LockResetIcon sx={{ mr: 1, opacity: 0.8 }} /> Şifrəni Dəyişdir
+                </Typography>
+                <TextField
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  label="Mövcud Şifrə"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  disabled={passwordLoading}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => handleClickShowPassword(setShowCurrentPassword)}
+                          onMouseDown={handleMouseDownPassword}
+                          edge="end"
+                          disabled={passwordLoading}
+                        >
+                          {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
                   }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
-                    <VisibilityIcon 
-                      sx={{ 
-                        color: '#f48fb1',
-                        mr: 2,
-                        fontSize: 32
-                      }} 
-                    />
-                    <Box>
-                      <Typography variant="h6">İzləmək istədiklərim</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Gələcəkdə izləmək üçün seçilmiş filmlər
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      fontWeight: 'bold',
-                      color: '#f48fb1',
-                      ml: { xs: 0, sm: 2 }
-                    }}
-                  >
-                    {profileData?.watchlist.watchlist || 0}
-                  </Typography>
-                </Box>
-                
-                <Box 
-                  sx={{ 
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    bgcolor: darkMode ? 'rgba(129, 199, 132, 0.15)' : 'rgba(129, 199, 132, 0.1)',
-                    p: 2,
-                    borderRadius: 2,
-                    mb: 2
+                />
+                <TextField
+                  type={showNewPassword ? 'text' : 'password'}
+                  label="Yeni Şifrə"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={passwordLoading}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => handleClickShowPassword(setShowNewPassword)}
+                          onMouseDown={handleMouseDownPassword}
+                          edge="end"
+                          disabled={passwordLoading}
+                        >
+                          {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
                   }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
-                    <PlayArrowIcon 
-                      sx={{ 
-                        color: '#81c784',
-                        mr: 2,
-                        fontSize: 32
-                      }} 
-                    />
-                    <Box>
-                      <Typography variant="h6">İzləməkdə olduğum</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Hal-hazırda izlənilən filmlər
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      fontWeight: 'bold',
-                      color: '#81c784',
-                      ml: { xs: 0, sm: 2 }
-                    }}
+                />
+                <TextField
+                   type={showConfirmPassword ? 'text' : 'password'}
+                   label="Yeni Şifrəni Təsdiqlə"
+                   variant="outlined"
+                   size="small"
+                   fullWidth
+                   value={confirmPassword}
+                   onChange={(e) => setConfirmPassword(e.target.value)}
+                   disabled={passwordLoading}
+                   InputProps={{
+                     endAdornment: (
+                       <InputAdornment position="end">
+                         <IconButton
+                           onClick={() => handleClickShowPassword(setShowConfirmPassword)}
+                           onMouseDown={handleMouseDownPassword}
+                           edge="end"
+                           disabled={passwordLoading}
+                         >
+                           {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                         </IconButton>
+                       </InputAdornment>
+                     ),
+                   }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                    sx={{ mt: 1, position: 'relative' }}
                   >
-                    {profileData?.watchlist.watching || 0}
-                  </Typography>
+                    {passwordLoading ? <CircularProgress size={24} sx={{ color: 'inherit', position: 'absolute', top: '50%', left: '50%', marginTop: '-12px', marginLeft: '-12px' }} /> : 'Şifrəni Yenilə'}
+                  </Button>
                 </Box>
-                
-                <Box 
-                  sx={{ 
-                    display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    bgcolor: darkMode ? 'rgba(144, 202, 249, 0.15)' : 'rgba(144, 202, 249, 0.1)',
-                    p: 2,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
-                    <CheckIcon 
-                      sx={{ 
-                        color: '#90caf9',
-                        mr: 2,
-                        fontSize: 32
-                      }} 
-                    />
-                    <Box>
-                      <Typography variant="h6">İzlədiklərim</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Artıq izlənilmiş filmlər
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      fontWeight: 'bold',
-                      color: '#90caf9',
-                      ml: { xs: 0, sm: 2 }
-                    }}
-                  >
-                    {profileData?.watchlist.watched || 0}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
+             </Stack>
           </Paper>
         </Grid>
+
+        {profileData.watchlist && (
+           <Grid item xs={12}>
+             <Paper elevation={0} sx={{ width: '100%', p: 2.5, borderRadius: 3, border: `1px solid ${muiTheme.palette.divider}` }}>
+               <Typography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>İzləmə Statistikası</Typography>
+               <Stack 
+                 direction={{ xs: 'column', sm: 'row' }}
+                 spacing={2} 
+                 divider={<Divider orientation="vertical" flexItem />}
+                 justifyContent="space-around"
+               >
+                 <Box sx={{ textAlign: 'center' }}>
+                   <Typography variant="h4" sx={{ color: muiTheme.palette.info.main, fontWeight: 'bold' }}>
+                     {profileData.watchlist.watchlist ?? 0}
+                   </Typography>
+                   <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <WatchLaterIcon fontSize="inherit" sx={{ mr: 0.5 }} /> Siyahıda
+                      </Typography>
+                    </Box>
+                 <Box sx={{ textAlign: 'center' }}>
+                   <Typography variant="h4" sx={{ color: muiTheme.palette.warning.main, fontWeight: 'bold' }}>
+                     {profileData.watchlist.watching ?? 0}
+                   </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <VisibilityIcon fontSize="inherit" sx={{ mr: 0.5 }} /> İzlənilir
+                   </Typography>
+                  </Box>
+                 <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ color: muiTheme.palette.success.main, fontWeight: 'bold' }}>
+                     {profileData.watchlist.watched ?? 0}
+                   </Typography>
+                   <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <CheckCircleIcon fontSize="inherit" sx={{ mr: 0.5 }} /> İzlənildi
+                  </Typography>
+                </Box>
+               </Stack>
+          </Paper>
+        </Grid>
+        )}
       </Grid>
       
-      {/* Resim Kırpma Modalı */}
-      <Dialog 
-        open={openCropModal} 
-        onClose={() => setOpenCropModal(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ pb: 1 }}>Profil şəklinizi kəsin</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ position: 'relative', height: 300, mb: 3 }}>
+      <Dialog open={openCropModal} onClose={() => setOpenCropModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Profil Şəklini Kırp</DialogTitle>
+        <DialogContent sx={{ position: 'relative', height: 400 }}>
             {selectedFile && (
               <Crop
                 image={selectedFile}
@@ -558,29 +643,33 @@ const Profile = () => {
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
-              />
-            )}
-          </Box>
-          <Box sx={{ px: 1 }}>
-            <Typography gutterBottom>Böyütmə</Typography>
+              cropShape="round"
+              showGrid={false}
+            />
+          )}
+        </DialogContent>
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', p: 2 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+             <Typography sx={{ mr: 2 }}>Yaxınlaşdır:</Typography>
             <Slider
               value={zoom}
               min={1}
               max={3}
               step={0.1}
-              onChange={(e, newValue) => setZoom(newValue as number)}
+                aria-labelledby="Zoom"
+                onChange={(e, zoom) => setZoom(zoom as number)}
             />
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCropModal(false)}>İmtina</Button>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+             <Button onClick={() => setOpenCropModal(false)}>Ləğv et</Button>
           <Button 
             onClick={uploadCroppedImage} 
             variant="contained" 
-            disabled={avatarLoading}
+                disabled={avatarLoading || !croppedAreaPixels}
           >
-            {avatarLoading ? 'Yüklənir...' : 'Şəkli saxla'}
+               {avatarLoading ? <CircularProgress size={24} /> : 'Yadda Saxla'}
           </Button>
+          </Box>
         </DialogActions>
       </Dialog>
     </Container>

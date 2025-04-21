@@ -1,0 +1,89 @@
+/* src/styles/customToast.css */
+
+/* react-toastify ümumi görünüşünü özəlləşdir */
+.Toastify__toast {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  font-family: "Inter", sans-serif !important; /* Layihənin yazı tipini istifadə et */
+  color: #ffffff !important; /* Ağ yazı rəngi */
+  padding: 12px 18px !important;
+}
+
+.Toastify__toast-body {
+  align-items: center !important; /* İkon və mətni vertikal olaraq hizala */
+  gap: 10px !important;
+}
+
+/* Fərqli tiplər üçün arxa plan rəngləri */
+.Toastify__toast--success {
+  background: #2d3748 !important; /* Tünd tema */
+  border-left: 5px solid #48bb78; /* Yaşıl sol kənar */
+}
+
+.Toastify__toast--error {
+  background: #2d3748 !important; /* Tünd tema */
+  border-left: 5px solid #f56565; /* Qırmızı sol kənar */
+}
+
+.Toastify__toast--warning {
+  background: #2d3748 !important; /* Tünd tema */
+  border-left: 5px solid #ed8936; /* Narıncı sol kənar */
+}
+
+.Toastify__toast--info {
+  background: #2d3748 !important; /* Tünd tema */
+  border-left: 5px solid #4299e1; /* Mavi sol kənar */
+}
+
+/* İkon stilləri (əgər default ikonlar istifadə edilirsə) */
+.Toastify__toast-icon > svg {
+  fill: currentColor !important; /* İkonun öz rəngini istifadə et */
+}
+
+/* Fərqli tiplər üçün ikon rəngləri */
+.Toastify__toast--success .Toastify__toast-icon > svg {
+  fill: #48bb78 !important; /* Yaşıl ikon */
+}
+.Toastify__toast--error .Toastify__toast-icon > svg {
+  fill: #f56565 !important; /* Qırmızı ikon */
+}
+.Toastify__toast--warning .Toastify__toast-icon > svg {
+  fill: #ed8936 !important; /* Narıncı ikon */
+}
+.Toastify__toast--info .Toastify__toast-icon > svg {
+  fill: #4299e1 !important; /* Mavi ikon */
+}
+
+/* İrəliləyiş çubuğu (Progress bar) */
+.Toastify__progress-bar {
+  height: 4px !important;
+  border-radius: 0 0 8px 8px !important; /* Altdan yuvarlaqlaşdırma */
+}
+
+/* Fərqli tiplər üçün irəliləyiş çubuğu rəngləri */
+.Toastify__progress-bar--success {
+  background: #48bb78 !important;
+}
+
+.Toastify__progress-bar--error {
+  background: #f56565 !important;
+}
+
+.Toastify__progress-bar--warning {
+  background: #ed8936 !important;
+}
+
+.Toastify__progress-bar--info {
+  background: #4299e1 !important;
+}
+
+/* Bağlama düyməsi (Close button) - opsiyonel */
+.Toastify__close-button {
+  color: #a0aec0 !important; /* Boz rəng */
+  opacity: 0.7 !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+ 

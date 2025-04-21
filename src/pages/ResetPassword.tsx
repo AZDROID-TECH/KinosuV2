@@ -7,11 +7,11 @@ import {
   Button,
   Typography,
   Paper,
-  Alert,
   InputAdornment,
 } from '@mui/material';
 import 'boxicons/css/boxicons.min.css';
 import { authAPI } from '../services/api';
+import { showSuccessToast, showErrorToast } from '../utils/toastHelper';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -20,41 +20,35 @@ const ResetPassword = () => {
     newPassword: '',
     confirmPassword: '',
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!token) {
-      setError('Etibarsız şifrə yeniləmə linki');
+      showErrorToast('Etibarsız şifrə yeniləmə linki');
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('Şifrələr uyğun gəlmir');
+      showErrorToast('Şifrələr uyğun gəlmir');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      console.log('Şifrə yeniləmə tələbi göndərilir');
       
       const data = await authAPI.resetPassword(token, formData.newPassword);
-      
-      setSuccess(data.message || 'Şifrəniz uğurla yeniləndi');
-      console.log('Şifrə uğurla yeniləndi');
+      const successMsg = data.message || 'Şifrəniz uğurla yeniləndi';
+      showSuccessToast(successMsg);
       
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 1500);
     } catch (err: any) {
-      console.error('Şifrə yeniləmə xətası:', err);
-      setError(err.message || 'Şifrə yeniləmə zamanı xəta baş verdi');
+      const errorMsg = err.message || 'Şifrə yeniləmə zamanı xəta baş verdi';
+      showErrorToast(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,40 +106,6 @@ const ResetPassword = () => {
             Şifrəni Yenilə
           </Typography>
         </Box>
-
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              width: '100%', 
-              mb: 2,
-              py: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-            icon={<i className='bx bx-error-circle' style={{ fontSize: '18px' }}></i>}
-          >
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert 
-            severity="success" 
-            sx={{ 
-              width: '100%', 
-              mb: 2,
-              py: 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-            icon={<i className='bx bx-check-circle' style={{ fontSize: '18px' }}></i>}
-          >
-            {success}
-          </Alert>
-        )}
 
         <Box 
           component="form" 

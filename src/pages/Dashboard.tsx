@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Container,
-  Grid,
   Box,
   TextField,
   Button,
@@ -13,27 +12,21 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Rating,
-  InputAdornment,
   Fade,
-  Grow,
-  Menu,
-  MenuItem,
   Divider,
   Pagination,
-  Tooltip,
   useMediaQuery,
   useTheme,
   Skeleton,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import { movieAPI } from '../services/api';
 import { Movie, SearchResult, MovieData } from '../types/movie';
 import { sortMovies, formatDate, getSortLabel } from '../utils/movieHelpers';
 import 'boxicons/css/boxicons.min.css';
+import MovieCardList from '../components/MovieCardList';
+import MovieCardSearch from '../components/MovieCardSearch';
 
 /**
  * @az İdarə Paneli Səhifəsi
@@ -74,6 +67,14 @@ const Dashboard = () => {
   // 2. Mövcud filmlərin imdb_id-lərini Set-də saxlamaq üçün useMemo
   const movieImdbIdsSet = useMemo(() => new Set(movies.map(m => m.imdb_id)), [movies]);
 
+  // Paginasiya edilmiş filmlər
+  const paginatedMovies = useMemo(() => {
+    return filteredMovies.slice(
+      (page - 1) * ITEMS_PER_PAGE,
+      page * ITEMS_PER_PAGE
+    );
+  }, [filteredMovies, page, ITEMS_PER_PAGE]);
+
   const fetchMovies = useCallback(async () => {
     setIsMoviesLoading(true);
     try {
@@ -112,7 +113,7 @@ const Dashboard = () => {
     };
   }, []);
 
-  // IMDb film arama
+  // IMDb film axtarışı
   const handleImdbSearch = async () => {
     if (!imdbSearchQuery.trim()) return;
 
@@ -157,9 +158,6 @@ const Dashboard = () => {
       });
       } catch (stateUpdateError) {
         console.error('Film siyahısını yeniləyərkən xəta baş verdi:', stateUpdateError);
-        // State güncelleme hatası durumunda belki kullanıcıya bilgi verilebilir
-        // Veya belki de listeyi yeniden fetch etmek daha güvenli olabilir
-        // fetchMovies(); 
       }
 
     } catch (error) {
@@ -187,10 +185,6 @@ const Dashboard = () => {
       await movieAPI.updateMovie(movieId, updates); 
       
       // Başarılı olursa: UI zaten güncel, bir şey yapmaya gerek yok.
-      // İsteğe bağlı: API'dan dönen `updatedMovie` verisi ile state'i teyit edebiliriz.
-      // setMovies((prevMovies) => prevMovies.map(movie => 
-      //   movie.id === movieId ? updatedMovie : movie
-      // ));
 
     } catch (error) {
       console.error('Film yeniləmə zamanı xəta baş verdi (Optimistic Update Rollback):', error);
@@ -212,15 +206,12 @@ const Dashboard = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setImdbSearchQuery('');
+    // Dialog kapandığında arama state'ini sıfırla
     setSearchResults([]);
+    setImdbSearchQuery('');
   };
 
-  // 3. isMovieInList funksiyasını optimallaşdır və useCallback ilə sar
-  const isMovieInList = useCallback((imdbId: string) => {
-    return movieImdbIdsSet.has(imdbId);
-  }, [movieImdbIdsSet]);
-
+  // Siralama menüsü işlemleri
   const handleSortClick = (event: React.MouseEvent<HTMLElement>) => {
     setSortAnchorEl(event.currentTarget);
   };
@@ -232,108 +223,330 @@ const Dashboard = () => {
   const handleSortSelect = (value: string) => {
     setSelectedSort(value);
     localStorage.setItem('selectedSort', value);
-    const sortedMovies = sortMovies([...movies], value);
-    setMovies(sortedMovies);
     handleSortClose();
+    
+    // State üzerinden sıralama (API isteği olmadan)
+    setMovies(prevMovies => sortMovies([...prevMovies], value));
   };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
-  // Sayfalama üçün filmleri böl
-  const paginatedMovies = filteredMovies.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
+  // Film liste durumunu kontrol et
+  const isMovieInList = (imdbId: string) => {
+    return movieImdbIdsSet.has(imdbId);
+  };
 
-  // Skeleton Card Component
+  // Skeleton kart
   const SkeletonCard = () => (
-    <Card sx={{ display: 'flex', height: '180px' }}>
-      <Skeleton variant="rectangular" width={120} height={180} />
-      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, p: 2 }}>
-        <Skeleton variant="text" sx={{ fontSize: '1rem', width: '80%', mb: 1 }} />
-        <Skeleton variant="text" sx={{ fontSize: '0.8rem', width: '40%', mb: 1 }} />
-        <Skeleton variant="rectangular" width="100%" height={40} sx={{ mb: 1 }} />
-        <Skeleton variant="text" sx={{ fontSize: '0.7rem', width: '50%' }} />
-      </Box>
-    </Card>
+    <Skeleton 
+      variant="rectangular" 
+      width="100%" 
+      height={180} 
+      sx={{ 
+        borderRadius: 1, 
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+      }} 
+    />
   );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          gap: { xs: 2, sm: 0 },
+        }}
+      >
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>
+          Filmlərim
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => setOpenDialog(true)}
+          sx={{
+            borderRadius: 2,
+            textTransform: 'none',
+            boxShadow: 'none',
+            '&:hover': {
+              boxShadow: 'none',
+              bgcolor: 'primary.dark',
+            },
+          }}
+          startIcon={<i className='bx bx-plus'></i>}
+        >
+          Film Əlavə Et
+        </Button>
+      </Box>
+
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 0 },
+        }}
+      >
+        {/* Mobil görünüm için düzen */}
+        <Box
+          sx={{
+            display: { xs: 'flex', sm: 'none' },
+            flexDirection: 'column',
+            width: '100%',
+            gap: 2
+          }}
+        >
+          {/* Arama kutusu - Mobil */}
         <TextField
-          placeholder="Əlavə edilmiş filmlərdə axtar..."
-          variant="outlined"
+            placeholder="Film axtar..."
           size="small"
-          sx={{ flexGrow: 1, mr: 2 }}
           value={localSearchQuery}
           onChange={(e) => setLocalSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: (
-              <InputAdornment position="start">
-                <i className='bx bx-search' style={{ fontSize: '20px' }}></i>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <button
-          onClick={() => setOpenDialog(true)}
-          className="add-button"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#1976d2',
-            padding: '8px',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center'
-          }}
-        >
-          <i className='bx bx-plus' style={{ fontSize: '24px' }}></i>
-        </button>
-      </Box>
+                <i
+                  className="bx bx-search"
+                  style={{ fontSize: '20px', marginRight: '8px' }}
+                ></i>
+              ),
+            }}
+            sx={{
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
 
+          {/* Filtreleme ve Sıralama - Mobil */}
       <Box sx={{ 
         display: 'flex', 
-        alignItems: 'center', 
+            width: '100%', 
         justifyContent: 'space-between',
-        gap: 2,
-        mb: 3,
-        borderBottom: '1px solid',
-        borderColor: 'divider',
+            alignItems: 'center'
+          }}>
+            <Box sx={{ 
+              width: 'calc(100% - 60px)', 
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none'
+              },
+              scrollbarWidth: 'none'
       }}>
       <Tabs
         value={status}
-        onChange={(_, newValue) => setStatus(newValue)}
+                onChange={(_, value) => setStatus(value)}
+                variant="scrollable"
+                scrollButtons={false}
           sx={{
+                  minHeight: '40px',
             '& .MuiTabs-indicator': {
               height: 3,
               borderRadius: '3px 3px 0 0',
             },
             '& .MuiTab-root': {
+                    minHeight: '40px',
+                    py: 0,
+                    px: 1,
+                    minWidth: 0,
+                  },
+                  '& .MuiTabs-flexContainer': {
+                    gap: 0.5
+                  }
+                }}
+              >
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="body2">Hamısı</Typography>
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                        }}
+                      >
+                        {movies.length}
+                      </Box>
+                    </Box>
+                  }
+                  value="all"
+                />
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="body2">İzləniləcək</Typography>
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                        }}
+                      >
+                        {movies.filter(movie => movie.status === 'watchlist').length}
+                      </Box>
+                    </Box>
+                  }
+                  value="watchlist"
+                />
+                <Tab 
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="body2">İzlənilir</Typography>
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                        }}
+                      >
+                        {movies.filter(movie => movie.status === 'watching').length}
+                      </Box>
+                    </Box>
+                  }
+                  value="watching"
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography variant="body2">İzlənildi</Typography>
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'text.secondary',
+                        }}
+                      >
+                        {movies.filter(movie => movie.status === 'watched').length}
+                      </Box>
+                    </Box>
+                  }
+                  value="watched"
+                />
+              </Tabs>
+            </Box>
+            
+            <Box>
+              <Button
+                onClick={handleSortClick}
+                size="small"
+                sx={{
               textTransform: 'none',
-              fontSize: '0.95rem',
-              fontWeight: 500,
-              minHeight: 48,
-              transition: 'all 0.2s',
+                  color: 'text.primary',
+                  bgcolor: 'action.hover',
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
               '&:hover': {
-                color: 'primary.main',
-              },
-            },
+                    bgcolor: 'action.selected',
+                  },
+                }}
+              >
+                <i className='bx bx-sort-alt-2' style={{ fontSize: '18px' }}></i>
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Masaüstü görünüm için Grid düzeni */}
+        <Box
+          sx={{
+            display: { xs: 'none', sm: 'grid' },
+            gridTemplateColumns: '250px 1fr auto',
+            width: '100%',
+            alignItems: 'center',
           }}
-        variant="scrollable"
-        scrollButtons="auto"
+        >
+          {/* Sol Sütun: Arama Kutusu */}
+          <Box>
+            <TextField
+              placeholder="Film axtar..."
+              size="small"
+              value={localSearchQuery}
+              onChange={(e) => setLocalSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <i
+                    className="bx bx-search"
+                    style={{ fontSize: '20px', marginRight: '8px' }}
+                  ></i>
+                ),
+              }}
+              sx={{
+                width: 250,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                },
+              }}
+            />
+          </Box>
+
+          {/* Orta Sütun: Filtreleme Sekmeleri */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Tabs
+              value={status}
+              onChange={(_, value) => setStatus(value)}
+              centered
+              sx={{
+                minHeight: '40px',
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                },
+                '& .MuiTab-root': {
+                  minHeight: '40px',
+                  py: 0,
+                  px: 2,
+                  minWidth: 100,
+                },
+              }}
       >
           <Tab 
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Hamısı</span>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">Hamısı</Typography>
                 <Box
                   sx={{
-                    bgcolor: 'action.hover',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     px: 1,
                     py: 0.5,
                     borderRadius: 1,
@@ -350,11 +563,13 @@ const Dashboard = () => {
           />
           <Tab 
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>İzləniləcək</span>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">İzləniləcək</Typography>
                 <Box
                   sx={{
-                    bgcolor: 'action.hover',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     px: 1,
                     py: 0.5,
                     borderRadius: 1,
@@ -371,11 +586,13 @@ const Dashboard = () => {
           />
           <Tab 
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>İzlənilir</span>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">İzlənilir</Typography>
                 <Box
                   sx={{
-                    bgcolor: 'action.hover',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     px: 1,
                     py: 0.5,
                     borderRadius: 1,
@@ -392,11 +609,13 @@ const Dashboard = () => {
           />
           <Tab
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>İzlənildi</span>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2">İzlənildi</Typography>
                 <Box
                   sx={{
-                    bgcolor: 'action.hover',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                     px: 1,
                     py: 0.5,
                     borderRadius: 1,
@@ -412,8 +631,10 @@ const Dashboard = () => {
             value="watched"
           />
         </Tabs>
+          </Box>
         
-        <Box>
+          {/* Sağ Sütun: Sıralama Butonu */}
+          <Box sx={{ justifySelf: 'end' }}>
           <Button
             onClick={handleSortClick}
             size="small"
@@ -436,13 +657,17 @@ const Dashboard = () => {
             <Typography 
               variant="body2" 
               sx={{ 
-                fontWeight: 500,
-                display: { xs: 'none', sm: 'block' }
+                  fontWeight: 500
               }}
             >
               {getSortLabel(selectedSort)}
             </Typography>
           </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Menu bileşeni - iki buttona da hizmet ediyor */}
           <Menu
             anchorEl={sortAnchorEl}
             open={Boolean(sortAnchorEl)}
@@ -576,278 +801,18 @@ const Dashboard = () => {
               </MenuItem>
             </Box>
           </Menu>
-        </Box>
-      </Box>
 
-      <Grid container spacing={2}>
-        {isMoviesLoading 
-          ? (
-            // Show skeletons while loading
-            Array.from(new Array(ITEMS_PER_PAGE)).map((_, index) => (
-              <Grid item xs={12} sm={6} md={6} lg={4} key={`skeleton-${index}`}>
-                <SkeletonCard />
-              </Grid>
-            ))
-          ) 
-          : (
-            // Show actual movie cards when loaded
-            paginatedMovies.map((movie) => (
-              <Grid item xs={12} sm={6} md={6} lg={4} key={movie.id}>
-                <Card 
-                  sx={{ 
-                    display: 'flex',
-                    height: '180px',
-                    transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'scale(1.02)',
-                    },
-                    position: 'relative',
-                  }}
-                >
-                  <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteMovie(movie.id);
-                      }}
-                    className="delete-button"
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      background: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                        width: '30px',
-                        height: '30px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <i className='bx bx-trash' style={{ fontSize: '18px' }}></i>
-                  </button>
-                  {/* Yorum Butonu */}
-                  <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      className="comment-button"
-                      style={{
-                        position: 'absolute',
-                        top: '45px', // Silme butonunun altına yerleştir
-                        right: '8px',
-                        background: theme.palette.action.hover, // Tema ile uyumlu arkaplan
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '30px',
-                        height: '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        transition: 'all 0.2s',
-                        color: theme.palette.text.secondary, // Default icon color
-                      }}
-                  >
-                    <i className='bx bx-message-rounded-dots' style={{ fontSize: '18px' }}></i>
-                  </button>
-                  <CardMedia
-                    component="img"
-                    sx={{
-                      width: 120,
-                      objectFit: 'cover',
-                    }}
-                    image={movie.poster}
-                    alt={movie.title}
-                  />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <CardContent sx={{ flex: '1 0 auto', p: 2 }}>
-                      <Tooltip 
-                        title={movie.title}
-                        placement="top"
-                        enterDelay={isMobile ? 100 : 200}
-                        enterNextDelay={isMobile ? 100 : 200}
-                        enterTouchDelay={0}
-                        leaveTouchDelay={3000}
-                        arrow
-                        PopperProps={{
-                          sx: {
-                            '& .MuiTooltip-tooltip': {
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                              color: theme.palette.mode === 'dark' ? '#fff' : '#000',
-                              boxShadow: theme.palette.mode === 'dark' 
-                                ? '0 4px 8px rgba(0, 0, 0, 0.5)' 
-                                : '0 4px 8px rgba(0, 0, 0, 0.15)',
-                              p: 1,
-                              borderRadius: 1,
-                              fontSize: '0.875rem',
-                              maxWidth: 300,
-                            },
-                            '& .MuiTooltip-arrow': {
-                              color: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                            },
-                          },
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            fontWeight: 'bold',
-                            mb: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 1,
-                            WebkitBoxOrient: 'vertical',
-                            lineHeight: 1.2,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {movie.title}
-                        </Typography>
-                      </Tooltip>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          IMDb:
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 'bold', color: 'primary.main' }}
-                        >
-                          {movie.imdb_rating}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <Rating
-                          size="small"
-                          value={movie.user_rating}
-                          onChange={(_, newValue) =>
-                            handleUpdateMovie(movie.id, { user_rating: newValue || 0 })
-                          }
-                        />
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 0.5,
-                            color: 'text.secondary',
-                            fontSize: '0.7rem',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}
-                        >
-                          <i className='bx bx-time-five' style={{ fontSize: '14px' }}></i>
-                          {formatDate(movie.created_at)}
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                    <CardActions sx={{ p: 2, pt: 0 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: 0.5,
-                          width: '100%',
-                        }}
-                      >
-                      <Button
-                          size="small"
-                          variant={movie.status === 'watchlist' ? 'contained' : 'text'}
-                          onClick={() =>
-                            handleUpdateMovie(movie.id, { status: 'watchlist' })
-                          }
-                        sx={{
-                            minWidth: 0,
-                            flex: 1,
-                            fontSize: '0.7rem',
-                            borderRadius: 1.5,
-                            py: 0.5,
-                          textTransform: 'none',
-                          boxShadow: 'none',
-                            transition: 'all 0.2s',
-                          '&:hover': {
-                            boxShadow: 'none',
-                              bgcolor: movie.status === 'watchlist' ? 'primary.dark' : 'action.hover',
-                            },
-                            ...(movie.status === 'watchlist' && {
-                              '&:hover': {
-                                bgcolor: 'primary.dark',
-                              },
-                            }),
-                        }}
-                      >
-                          İzləniləcək
-                      </Button>
-                      <Button
-                          size="small"
-                          variant={movie.status === 'watching' ? 'contained' : 'text'}
-                          onClick={() =>
-                            handleUpdateMovie(movie.id, { status: 'watching' })
-                          }
-                        sx={{
-                            minWidth: 0,
-                            flex: 1,
-                            fontSize: '0.7rem',
-                            borderRadius: 1.5,
-                            py: 0.5,
-                          textTransform: 'none',
-                          boxShadow: 'none',
-                            transition: 'all 0.2s',
-                          '&:hover': {
-                            boxShadow: 'none',
-                              bgcolor: movie.status === 'watching' ? 'primary.dark' : 'action.hover',
-                            },
-                            ...(movie.status === 'watching' && {
-                              '&:hover': {
-                                bgcolor: 'primary.dark',
-                              },
-                            }),
-                          }}
-                        >
-                          İzlənilir
-                        </Button>
-                        <Button
-                          size="small"
-                          variant={movie.status === 'watched' ? 'contained' : 'text'}
-                          onClick={() =>
-                            handleUpdateMovie(movie.id, { status: 'watched' })
-                          }
-                          sx={{
-                            minWidth: 0,
-                            flex: 1,
-                            fontSize: '0.7rem',
-                            borderRadius: 1.5,
-                            py: 0.5,
-                            textTransform: 'none',
-                            boxShadow: 'none',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              boxShadow: 'none',
-                              bgcolor: movie.status === 'watched' ? 'primary.dark' : 'action.hover',
-                            },
-                            ...(movie.status === 'watched' && {
-                              '&:hover': {
-                                bgcolor: 'primary.dark',
-                              },
-                            }),
-                        }}
-                      >
-                          İzlənildi
-                      </Button>
-                    </Box>
-                  </CardActions>
-                  </Box>
-                </Card>
-              </Grid>
-            ))
-          )
-        }
-      </Grid>
+      {/* MovieCardList komponenti */}
+      <MovieCardList 
+        movies={filteredMovies}
+        isLoading={isMoviesLoading}
+        page={page}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onUpdateMovie={handleUpdateMovie}
+        onDeleteMovie={handleDeleteMovie}
+        skeletonCard={SkeletonCard}
+        isMobile={isMobile}
+      />
 
       {filteredMovies.length > ITEMS_PER_PAGE && (
         <Box
@@ -946,250 +911,16 @@ const Dashboard = () => {
             background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
           },
         }}>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2, mt: 1.5 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="IMDb-də film axtar..."
-              value={imdbSearchQuery}
-              onChange={(e) => setImdbSearchQuery(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleImdbSearch();
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <i className='bx bx-search' style={{ fontSize: '20px', color: 'text.secondary' }}></i>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    '& > fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                },
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleImdbSearch}
-              disabled={loading}
-              sx={{
-                minWidth: 100,
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: 'none',
-                '&:hover': {
-                  boxShadow: 'none',
-                  bgcolor: 'primary.dark',
-                },
-              }}
-            >
-              {loading ? (
-                <i className='bx bx-loader-alt bx-spin' ></i>
-              ) : (
-                'Axtar'
-              )}
-            </Button>
-          </Box>
-
-          {!searchResults.length && (
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1.5,
-                py: 4,
-                color: 'text.secondary'
-              }}
-            >
-              <i className='bx bx-movie-play' style={{ fontSize: '48px' }}></i>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                Yeni bir film axtarın
-              </Typography>
-              <Typography variant="caption" sx={{ textAlign: 'center', maxWidth: 300 }}>
-                Film adını yazın və ya IMDb ID-sini daxil edin
-              </Typography>
-            </Box>
-          )}
-
-          <Grid container spacing={1.5}>
-            {searchResults.map((movie, index) => (
-              <Grow
-                in={true}
-                key={movie.imdbID}
-                timeout={200 + index * 50}
-              >
-                <Grid item xs={6} sm={4} md={3}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'all 0.2s',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    bgcolor: 'background.paper',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: (theme) => `0 4px 12px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)'}`,
-                      '& .movie-poster': {
-                        transform: 'scale(1.05)',
-                      },
-                    },
-                  }}
-                >
-                  <Box sx={{ position: 'relative', paddingTop: '130%', overflow: 'hidden' }}>
-                    <CardMedia
-                      component="img"
-                      className="movie-poster"
-                      sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease',
-                      }}
-                      image={movie.Poster}
-                      alt={movie.Title}
-                    />
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-                        p: 1,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: 'white',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-                        }}
-                      >
-                        <i className='bx bxs-star' style={{ color: '#ffd700' }}></i>
-                        {movie.imdbRating}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: 'white',
-                          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-                        }}
-                      >
-                        {movie.Year}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ p: 1.5, flexGrow: 1 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 500,
-                        mb: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {movie.Title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {movie.Genre.split(',').map(genre => {
-                        const genreMap: { [key: string]: string } = {
-                          'Action': 'Fəaliyyət',
-                          'Adventure': 'Macəra',
-                          'Animation': 'Animasiya',
-                          'Biography': 'Bioqrafiya',
-                          'Comedy': 'Komediya',
-                          'Crime': 'Cinayət',
-                          'Documentary': 'Sənədli',
-                          'Drama': 'Drama',
-                          'Family': 'Ailə',
-                          'Fantasy': 'Fantaziya',
-                          'Film-Noir': 'Film-Noir',
-                          'History': 'Tarix',
-                          'Horror': 'Dəhşət',
-                          'Music': 'Musiqi',
-                          'Musical': 'Müzikal',
-                          'Mystery': 'Sirr',
-                          'Romance': 'Romantika',
-                          'Sci-Fi': 'Elmi Fantastika',
-                          'Sport': 'İdman',
-                          'Thriller': 'Triller',
-                          'War': 'Müharibə',
-                          'Western': 'Vestern'
-                        };
-                        return genreMap[genre.trim()] || genre.trim();
-                      }).join(' • ')}
-                    </Typography>
-                  </Box>
-                  <CardActions sx={{ p: 1, pt: 0 }}>
-                    <Button
-                      fullWidth
-                      size="small"
-                      variant={isMovieInList(movie.imdbID) ? "outlined" : "contained"}
-                      disabled={isMovieInList(movie.imdbID)}
-                      onClick={() => handleAddMovie(movie)}
-                      startIcon={isMovieInList(movie.imdbID) ? 
-                        <i className='bx bx-check' ></i> : 
-                        <i className='bx bx-plus' ></i>
-                      }
-                      sx={{
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        boxShadow: 'none',
-                        '&:hover': {
-                          boxShadow: 'none',
-                          bgcolor: isMovieInList(movie.imdbID) ? 'transparent' : 'primary.dark',
-                        },
-                        ...(isMovieInList(movie.imdbID) && {
-                          bgcolor: 'action.disabledBackground',
-                          color: 'text.disabled',
-                          borderColor: 'transparent',
-                        }),
-                      }}
-                    >
-                      {isMovieInList(movie.imdbID) ? 'Əlavə edilib' : 'Əlavə et'}
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-              </Grow>
-            ))}
-          </Grid>
+          {/* MovieCardSearch komponenti */}
+          <MovieCardSearch
+            searchQuery={imdbSearchQuery}
+            onSearchQueryChange={setImdbSearchQuery}
+            onSearch={handleImdbSearch}
+            isLoading={loading}
+            searchResults={searchResults}
+            onAddMovie={handleAddMovie}
+            isMovieInList={isMovieInList}
+          />
         </DialogContent>
       </Dialog>
     </Container>

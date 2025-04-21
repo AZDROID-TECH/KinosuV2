@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Container,
@@ -7,7 +7,6 @@ import {
   Button,
   Typography,
   Paper,
-  Alert,
   InputAdornment,
   useTheme,
   useMediaQuery,
@@ -16,6 +15,7 @@ import {
 import 'boxicons/css/boxicons.min.css';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
+import { showSuccessToast, showErrorToast } from '../utils/toastHelper';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -25,61 +25,30 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // Mobil cihazlarda zoom sorununu çözmek için meta viewport tag'ini düzenleme
-  useEffect(() => {
-    // Mevcut viewport meta tag'ini al
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    
-    // Eğer viewport meta tag'i varsa, maximum-scale ve user-scalable özelliklerini ekle
-    if (viewportMeta) {
-      viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-    } else {
-      // Yoksa yeni bir viewport meta tag'i oluştur
-      const newViewportMeta = document.createElement('meta');
-      newViewportMeta.name = 'viewport';
-      newViewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-      document.head.appendChild(newViewportMeta);
-    }
-    
-    // Component unmount olduğunda orijinal viewport ayarlarını geri yükle
-    return () => {
-      if (viewportMeta) {
-        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }
-    };
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Təkrarlanan şifrə eyni olmalıdır');
+      const errorMsg = 'Təkrarlanan şifrə eyni olmalıdır';
+      showErrorToast(errorMsg);
       return;
     }
 
     try {
-      console.log('Qeydiyyat başladılır:', {
-        username: formData.username,
-        email: formData.email,
-        passwordLength: formData.password.length
-      });
-
-      // authAPI servisini kullanarak kayıt işlemi
       await authAPI.register(formData);
-
-      console.log('Qeydiyyat uğurlu oldu');
-      navigate('/login');
+      showSuccessToast('Hesabınız uğurla yaradıldı! İndi daxil ola bilərsiniz.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+      
     } catch (err: any) {
-      console.error('Qeydiyyat xətası:', err);
-      setError(err.message);
+      showErrorToast(err.message || 'Qeydiyyat zamanı xəta baş verdi.');
     }
   };
 
@@ -246,32 +215,6 @@ const Register = () => {
               </Typography>
             </Box>
           </Box>
-
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                width: '100%', 
-                mb: 2,
-                py: 0.6,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                borderRadius: 2,
-                backgroundColor: isDarkMode 
-                  ? alpha('#f44336', 0.15) 
-                  : alpha('#f44336', 0.1),
-                color: isDarkMode ? '#ff8a80' : '#d32f2f',
-                border: `1px solid ${isDarkMode ? alpha('#f44336', 0.3) : alpha('#f44336', 0.2)}`,
-                '& .MuiAlert-message': {
-                  fontSize: '0.85rem',
-                }
-              }}
-              icon={<i className='bx bx-error-circle' style={{ fontSize: '18px' }}></i>}
-            >
-              {error}
-            </Alert>
-          )}
 
           <Box 
             component="form" 

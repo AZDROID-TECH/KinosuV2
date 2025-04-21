@@ -27,8 +27,21 @@ export function getClient() {
   return supabaseAdmin || supabase;
 }
 
+// RLS politikalarını aşmak için service_role client'i döndürür
+// Bu, yalnızca güvenli backend operasyonları için kullanılmalıdır
+export function getServiceClient() {
+  // Service key mevcut değilse normal client'i döndür ama uyarı ver
+  if (!supabaseAdmin) {
+    console.warn('SUPABASE_SERVICE_KEY tapılmadı. Row Level Security (RLS) politikaları işləyəcək.');
+    return supabase;
+  }
+  return supabaseAdmin;
+}
+
 // Cədvəl adları (table names)
 export const TABLES = {
   USERS: 'users',
-  MOVIES: 'movies'
+  MOVIES: 'movies',
+  COMMENTS: 'comments',
+  REPLIES: 'replies'
 }; 

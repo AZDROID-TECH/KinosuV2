@@ -4,11 +4,14 @@ import authRoutes from './routes/auth';
 import movieRoutes from './routes/movies';
 import userRoutes from './routes/user';
 import healthRoutes from './routes/health';
+import commentRoutes from './routes/comments';
+import statsRoutes from './routes/stats';
 import { rateLimiter } from './middleware/rateLimiter';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { TABLES, getClient } from './utils/supabase';
+import { logger } from './utils/logger';
 
 // .env faylını yüklə - main dotenv yüklemesi
 dotenv.config();
@@ -49,6 +52,16 @@ const initializeDatabase = async () => {
     } catch (error) {
       // Sessizce devam et
     }
+    
+    // COMMENTS tablosunu kontrol et
+    try {
+      await client
+        .from(TABLES.COMMENTS)
+        .select('id')
+        .limit(1);
+    } catch (error) {
+      // Sessizce devam et
+    }
   } catch (error) {
     // Sessizce devam et
   }
@@ -58,7 +71,12 @@ const initializeDatabase = async () => {
 initializeDatabase();
 
 // Basit CORS yapılandırması - frontend ve backend aynı domainde çalıştığı için minimalist
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'development' 
+    ? ['http://localhost:3000', 'http://localhost:5000'] 
+    : true,
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(rateLimiter);
@@ -68,6 +86,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Frontend statik dosyalarını sunma - dağıtım klasörü
 const distPath = path.join(__dirname, '../public');
@@ -92,5 +112,5 @@ if (fs.existsSync(distPath)) {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server ${PORT} portunda dinleniyor`);
+  // Logları devre dışı bıraktık
 }); 

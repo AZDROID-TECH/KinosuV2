@@ -4,19 +4,22 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import { TABLES, getClient } from '../utils/supabase';
+import bcrypt from 'bcryptjs'; // bcryptjs kitabxanasını import et
 
 // .env faylını yüklə
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const SUPABASE_PROJECT_URL = process.env.SUPABASE_URL;
 
-interface UserRecord {
+// Frontend tərəfindən istifadə edilən tip
+interface UserForAdmin {
   id: number;
   username: string;
   email: string | null;
-  // avatar: string | null; // Artıq Supabase URL olacaq
-  avatar_url: string | null; // Yeni ad: avatar_url
+  avatar_url: string | null;
   created_at: string;
+  is_admin: boolean;
+  comment_count?: number; // Şərh sayı (opsiyonel)
 }
 
 interface WatchlistRecord {
@@ -99,7 +102,7 @@ export const getProfile = async (req: Request, res: Response) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      avatar: user.avatar_url, // avatar -> avatar_url
+      avatar_url: user.avatar_url, // AuthContext'in beklediği isim
       createdAt: createdAt,
       isAdmin: user.is_admin, // isAdmin eklendi
       watchlist: {
@@ -156,7 +159,6 @@ export const uploadAvatar = async (req: Request, res: Response) => {
       } catch (urlParseOrDeleteError) {
           console.error("Köhnə avatar URL-ni parse edərkən və ya silərkən xəta:", urlParseOrDeleteError);
       }
-    } else if (user.avatar_url) {
     }
 
     // 3. Yeni fayl adını yarat (uuid + fayl uzantısı)
@@ -214,7 +216,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
   }
 };
 
-// Avatar silme funksiyası da Supabase Storage istifadə etməlidir
+// Avatarı sil
 export const deleteAvatar = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -286,14 +288,92 @@ export const deleteAvatar = async (req: Request, res: Response) => {
   }
 };
 
+// İstifadəçi şifrəsini dəyişdir
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { currentPassword, newPassword } = req.body;
+    const client = getClient();
+
+    // Gərəkli məlumatlar mövcuddurmu?
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Cari şifrə və yeni şifrə tələb olunur' });
+    }
+
+    // 1. İstifadəçini tap və cari şifrə hashını al
+    const { data: user, error: userError } = await client
+      .from(TABLES.USERS)
+      .select('password')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      console.error('Şifrə dəyişdirilməsi üçün istifadəçi tapılmadı və ya sorğu xətası:', userError);
+      return res.status(404).json({ error: 'İstifadəçi tapılmadı' });
+    }
+
+    if (!user.password) {
+        console.error('İstifadəçinin cari şifrə hashı mövcud deyil:', userId);
+        return res.status(500).json({ error: 'Server xətası: Şifrə məlumatları mövcud deyil' });
+    }
+
+    // 2. Cari şifrəni müqayisə et
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Cari şifrə yanlışdır' });
+    }
+
+    // 3. Yeni şifrəni hashla
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    // 4. Məlumat bazasında şifrəni yenilə
+    const { error: updateError } = await client
+      .from(TABLES.USERS)
+      .update({ password: newPasswordHash })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Şifrə yenilənməsi zamanı verilənlər bazası xətası:', updateError);
+      return res.status(500).json({ error: 'Şifrə yenilənməsi zamanı xəta baş verdi' });
+    }
+
+    res.json({ message: 'Şifrə uğurla dəyişdirildi' });
+
+  } catch (error) {
+    console.error('Şifrə dəyişdirilməsi zamanı xəta:', error);
+    res.status(500).json({ error: 'Şifrə dəyişdirilməsi zamanı server xətası baş verdi' });
+  }
+};
+
+// Yeni interface (Controller üçün)
+interface UserWithCommentCount extends UserForAdmin {
+  comment_count?: number;
+}
+
 // --- Admin Fonksiyonları Tekrar Aktif Edildi ---
 // Yorum satırları kaldırıldı
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const client = getClient();
+    
+    // Bütün istifadəçiləri və onların şərh saylarını gətir
+    // Şərh sayını almaq üçün birbaşa select ilə RPC və ya view istifadə etmək daha performanslı ola bilər,
+    // amma şimdilik subquery ilə edək.
     const { data: users, error } = await client
       .from(TABLES.USERS)
-      .select('id, username, email, avatar_url, created_at, is_admin')
+      .select(`
+        id, 
+        username, 
+        email, 
+        avatar_url, 
+        created_at, 
+        is_admin,
+        comment_count:comments(count)
+      `)
       .order('id', { ascending: true }); 
       
     if (error) {
@@ -301,7 +381,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'İstifadəçi siyahısı alınarkən verilənlər bazası xətası baş verdi' });
     }
     
-    res.json(users || []);
+    // Frontend'in gözlədiyi formata çevirmək lazım ola bilər
+    // Məsələn, `comment_count` massiv olaraq gəlirsə [{count: X}] onu saya çevirmək
+    const formattedUsers = users?.map(user => ({
+      ...user,
+      comment_count: Array.isArray(user.comment_count) ? user.comment_count[0]?.count ?? 0 : 0
+    })) || [];
+    
+    res.json(formattedUsers);
+
   } catch (error) {
     console.error('Bütün istifadəçiləri gətirmə zamanı ümumi xəta:', error);
     res.status(500).json({ error: 'İstifadəçi siyahısı alınarkən gözlənilməz server xətası baş verdi' });

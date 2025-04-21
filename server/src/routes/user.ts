@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { getProfile, uploadAvatar, deleteAvatar, getAllUsers, setUserAdminStatus, updateUser, deleteUser, getPublicProfile } from '../controllers/userController';
+import { getProfile, uploadAvatar, deleteAvatar, getAllUsers, setUserAdminStatus, updateUser, deleteUser, getPublicProfile, changePassword } from '../controllers/userController';
 import { authenticateToken } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
 
@@ -40,6 +40,9 @@ router.post('/avatar', authenticateToken, upload.single('avatar'), uploadAvatar)
 
 // Avatar sil
 router.delete('/avatar', authenticateToken, deleteAvatar);
+
+// İstifadəçi öz şifrəsini dəyişdir
+router.put('/change-password', authenticateToken, changePassword);
 
 // --- Admin Route'ları Tekrar Aktif Edildi ---
 // Bütün istifadəçiləri gətir (Admin Yetkisi Lazımdır)

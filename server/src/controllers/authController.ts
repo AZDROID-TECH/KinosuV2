@@ -101,7 +101,6 @@ export const register = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Kullanıcıyı oluştur
-    console.log('İstifadəçi yaratmağa çalışıram:', { username, email, hashedPassword: '[GİZLİ]' });
     
     const { error: insertError } = await client
       .from(TABLES.USERS)

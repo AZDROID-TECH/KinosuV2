@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
@@ -7,7 +7,6 @@ import {
   Button,
   Typography,
   Paper,
-  Alert,
   InputAdornment,
   Dialog,
   DialogTitle,
@@ -20,6 +19,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import 'boxicons/css/boxicons.min.css';
 import { authAPI } from '../services/api';
+import { showErrorToast, showSuccessToast } from '../utils/toastHelper';
 
 const Login = () => {
   const { login } = useAuth();
@@ -27,83 +27,44 @@ const Login = () => {
     username: '',
     password: '',
   });
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [resetMessage, setResetMessage] = useState('');
-  const [resetError, setResetError] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const isDarkMode = theme.palette.mode === 'dark';
 
-  useEffect(() => {
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    
-    if (viewportMeta) {
-      viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-    } else {
-      const newViewportMeta = document.createElement('meta');
-      newViewportMeta.name = 'viewport';
-      newViewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-      document.head.appendChild(newViewportMeta);
-    }
-    
-    return () => {
-      if (viewportMeta) {
-        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }
-    };
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     try {
-      console.log('Giriş cəhdi:', {
-        username: formData.username,
-        passwordLength: formData.password.length
-      });
-      
       await login(formData.username, formData.password);
-      console.log('Giriş uğurlu oldu');
+      showSuccessToast('Uğurla daxil oldunuz!');
     } catch (err: any) {
-      console.error('Giriş xətası:', err);
-      setError(err.message);
+      showErrorToast(err.message || 'Giriş zamanı xəta baş verdi.');
     }
   };
 
   const handleForgotPassword = async () => {
-    setResetMessage('');
-    setResetError('');
     setResetLoading(true);
 
     if (!email || !email.trim()) {
-      setResetError('Email ünvanı daxil edilməlidir');
+      showErrorToast('Email ünvanı daxil edilməlidir');
       setResetLoading(false);
       return;
     }
 
     try {
-      console.log('Şifrə yeniləmə tələbi göndərilir:', { email });
-      
       const data = await authAPI.forgotPassword(email);
-      
-      setResetMessage(data.message || 'Şifrə yeniləmə linki email ünvanınıza göndərildi');
+      const successMsg = data.message || 'Şifrə yeniləmə linki email ünvanınıza göndərildi';
+      showSuccessToast(successMsg);
       setEmail('');
-      
-      console.log('Şifrə yeniləmə tələbi uğurlu oldu');
-      
-      setTimeout(() => {
-        setForgotPasswordOpen(false);
-        setResetMessage('');
-      }, 3000);
+      setForgotPasswordOpen(false);
     } catch (err: any) {
-      console.error('Şifrə yeniləmə tələbi xətası:', err);
-      setResetError(err.message || 'Şifrə yeniləmə tələbi zamanı xəta baş verdi');
+      const errorMsg = err.message || 'Şifrə yeniləmə tələbi zamanı xəta baş verdi';
+      showErrorToast(errorMsg);
     } finally {
       setResetLoading(false);
     }
@@ -273,32 +234,6 @@ const Login = () => {
                 </Typography>
               </Box>
             </Box>
-
-            {error && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                  width: '100%', 
-                  mb: 2,
-                  py: 0.6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  borderRadius: 2,
-                  backgroundColor: isDarkMode 
-                    ? alpha('#f44336', 0.15) 
-                    : alpha('#f44336', 0.1),
-                  color: isDarkMode ? '#ff8a80' : '#d32f2f',
-                  border: `1px solid ${isDarkMode ? alpha('#f44336', 0.3) : alpha('#f44336', 0.2)}`,
-                  '& .MuiAlert-message': {
-                    fontSize: '0.85rem',
-                  }
-                }}
-                icon={<i className='bx bx-error-circle' style={{ fontSize: '18px' }}></i>}
-              >
-                {error}
-              </Alert>
-            )}
 
             <Box 
               component="form" 
@@ -544,8 +479,6 @@ const Login = () => {
         open={forgotPasswordOpen}
         onClose={() => {
           setForgotPasswordOpen(false);
-          setResetMessage('');
-          setResetError('');
           setEmail('');
         }}
         maxWidth="xs"
@@ -582,46 +515,6 @@ const Login = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          {resetMessage && (
-            <Alert 
-              severity="success" 
-              sx={{ 
-                mb: 2, 
-                borderRadius: 2,
-                backgroundColor: isDarkMode 
-                  ? alpha('#4caf50', 0.15) 
-                  : alpha('#4caf50', 0.1),
-                color: isDarkMode ? '#81c784' : '#2e7d32',
-                border: `1px solid ${isDarkMode ? alpha('#4caf50', 0.3) : alpha('#4caf50', 0.2)}`,
-                '& .MuiAlert-message': {
-                  fontSize: '0.85rem',
-                }
-              }}
-              icon={<i className='bx bx-check-circle' style={{ fontSize: '18px' }}></i>}
-            >
-              {resetMessage}
-            </Alert>
-          )}
-          {resetError && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 2, 
-                borderRadius: 2,
-                backgroundColor: isDarkMode 
-                  ? alpha('#f44336', 0.15) 
-                  : alpha('#f44336', 0.1),
-                color: isDarkMode ? '#ff8a80' : '#d32f2f',
-                border: `1px solid ${isDarkMode ? alpha('#f44336', 0.3) : alpha('#f44336', 0.2)}`,
-                '& .MuiAlert-message': {
-                  fontSize: '0.85rem',
-                }
-              }}
-              icon={<i className='bx bx-error-circle' style={{ fontSize: '18px' }}></i>}
-            >
-              {resetError}
-            </Alert>
-          )}
           <TextField
             autoFocus
             margin="dense"
@@ -681,8 +574,6 @@ const Login = () => {
           <Button
             onClick={() => {
               setForgotPasswordOpen(false);
-              setResetMessage('');
-              setResetError('');
               setEmail('');
             }}
             sx={{

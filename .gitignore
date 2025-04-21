@@ -1,5 +1,5 @@
 node_modules/
-AZDROID/
+Logs/
 
 .env
 .env.local
@@ -9,7 +9,7 @@ AZDROID/
 dist/
 server/dist/
 server/uploads/
-
+server/.env
 # Logs
 Logs/
 *.log

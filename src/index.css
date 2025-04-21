@@ -54,11 +54,6 @@ main {
   background-color: rgba(25, 118, 210, 0.04) !important;
 }
 
-.delete-button:hover {
-  background-color: #ef5350 !important;
-  color: white !important;
-}
-
 .close-button:hover {
   color: #ef5350 !important;
   transform: rotate(90deg);
@@ -70,16 +65,6 @@ main {
 
 [data-theme="dark"] .add-button:hover {
   background-color: rgba(144, 202, 249, 0.08) !important;
-}
-
-[data-theme="dark"] .delete-button {
-  background-color: #424242;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-[data-theme="dark"] .delete-button:hover {
-  background-color: #ef5350 !important;
-  color: white !important;
 }
 
 /* Login Page Styles */
