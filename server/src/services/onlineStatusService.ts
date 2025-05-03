@@ -9,9 +9,8 @@ const onlineUserMap = new Map<number, { socketId: string, lastSeen: Date }>();
 export const initializeSocketServer = (server: HttpServer) => {
   const io = new SocketServer(server, {
     cors: {
-      origin: process.env.NODE_ENV === 'development' 
-        ? ['http://localhost:3000', 'http://localhost:5000'] 
-        : true,
+      // NODE_ENV değerinden bağımsız olarak tüm origin'lere izin ver
+      origin: true,
       credentials: true
     }
   });
@@ -40,6 +39,11 @@ export const initializeSocketServer = (server: HttpServer) => {
   });
 
   io.on('connection', (socket) => {
+    // Kullanıcı verileri yoksa hata günlüğü
+    if (!socket.data.user) {
+      return;
+    }
+    
     const { userId } = socket.data.user;
     
     // Kullanıcı bağlandı - socket.id ile ilişkilendir

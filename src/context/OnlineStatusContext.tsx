@@ -44,10 +44,8 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
 
-    // API_URL'i backend server URL'inden al
-    const API_URL = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5000' 
-      : window.location.origin;
+    // Her zaman mevcut origin'i kullan
+    const API_URL = window.location.origin;
     
     const newSocket = io(API_URL, {
       withCredentials: true,
@@ -57,10 +55,12 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
     });
 
     newSocket.on('connect', () => {
-      // Konsol log kaldırıldı
-      
       // Kullanıcı "online" olduğunu bildir
       newSocket.emit('user:online', { userId });
+    });
+
+    newSocket.on('connect_error', (error) => {
+      // Sessizce hataları görmezden gel
     });
 
     newSocket.on('users:online', (users: number[]) => {
@@ -76,7 +76,7 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Socket.io bağlantısı kesildi');
+      // Sessizce bağlantı kesildiğinde devam et
     });
 
     setSocket(newSocket);

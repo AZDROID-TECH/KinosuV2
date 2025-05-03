@@ -149,31 +149,23 @@ server.listen(PORT, () => {
   console.log(`Server ${PORT} portunda çalışıyor`);
 
   // --- Render Free Tier Uyanıq Tutma --- 
-  if (process.env.NODE_ENV === 'production' && process.env.CLIENT_URL) {
+  // NODE_ENV değerinden bağımsız olarak ping mekanizmasını etkinleştir
+  if (process.env.CLIENT_URL) {
     const PING_INTERVAL_MS = 1 * 60 * 1000; // 1 dəqiqə
     const targetUrl = process.env.CLIENT_URL;
 
-    console.log(`Render uyanıq tutma servisi ${targetUrl} üçün ${PING_INTERVAL_MS / 60000} dəqiqə intervalı ilə aktiv edildi.`);
-
     const pingInterval = setInterval(async () => {
       try {
-        const response = await axios.get(targetUrl);
-        console.log(`[${new Date().toISOString()}] Ping: ${targetUrl} uğurla ping edildi (Status: ${response.status}).`);
+        await axios.get(targetUrl);
+        // Başarılı ping sessizce devam et
       } catch (error) {
-        // logger.error yerine console.error kullanıyoruz
-        console.error(`[${new Date().toISOString()}] Ping Xəta: ${targetUrl} - ${error instanceof Error ? error.message : 'Bilinməyən xəta'}`);
-        
-        // Hatayla ilgili daha fazla bilgi
-        console.error('Ping xəta detalları:', error);
-        
         // Bağlantı hatası sonrası yeniden deneme (opsiyonel)
         setTimeout(async () => {
           try {
-            console.log(`[${new Date().toISOString()}] Təkrar ping cəhdi...`);
-            const retryResponse = await axios.get(targetUrl, { timeout: 10000 });
-            console.log(`[${new Date().toISOString()}] Təkrar ping uğurlu: ${retryResponse.status}`);
+            await axios.get(targetUrl, { timeout: 10000 });
+            // Başarılı yeniden deneme, sessizce devam et
           } catch (retryError) {
-            console.error(`[${new Date().toISOString()}] Təkrar ping uğursuz:`, retryError instanceof Error ? retryError.message : 'Bilinməyən xəta');
+            // Sessizce başarısız yeniden deneme
           }
         }, 15000); // 15 saniye sonra tekrar dene
       }
@@ -182,11 +174,8 @@ server.listen(PORT, () => {
     // Proqram dayandırıldıqda intervalı təmizlə (nəzəri olaraq)
     process.on('SIGTERM', () => {
       clearInterval(pingInterval);
-      console.log('Render uyanıq tutma intervalı SIGTERM siqnalı ilə təmizləndi.');
       process.exit(0);
     });
-  } else {
-    console.log('Render uyanıq tutma servisi aktiv deyil: NODE_ENV=production və CLIENT_URL təyin edilməlidir.');
   }
   // --- Render Free Tier Uyanıq Tutma Sonu ---
 }); 
