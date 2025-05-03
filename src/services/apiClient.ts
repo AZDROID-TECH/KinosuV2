@@ -31,7 +31,24 @@ apiClient.interceptors.response.use(
   (error) => {
     // Hata kodlarını işle
     if (error.response) {
-      // Hata detayını al
+      // 401 (Unauthorized) veya 403 (Forbidden) hatası olduğunda - token geçersiz
+      if (error.response.status === 401 || error.response.status === 403) {
+        console.error('Token geçersiz veya süresi dolmuş:', error.response.data);
+        
+        // Eğer token geçersizse ve error.response.data içinde bir mesaj varsa onu kullanalım
+        const errorMessage = error.response.data.error || 'Sessiyanın müddəti bitib, yenidən daxil olun';
+        
+        // Kullanıcı oturumunu sonlandır
+        localStorage.removeItem('token');
+        
+        // Kullanıcıyı login sayfasına yönlendir 
+        // Direk navigate kullanamadığımız için window.location kullanıyoruz
+        window.location.href = '/login?expired=true';
+        
+        return Promise.reject(errorMessage);
+      }
+      
+      // Diğer hatalar için normal işleme devam et
       const errorData = error.response.data;
       return Promise.reject(errorData.error || errorData.message || 'Bilinməyən xəta');
     }

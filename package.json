@@ -24,15 +24,18 @@
     "@tsparticles/slim": "^3.8.1",
     "axios": "^1.6.7",
     "boxicons": "^2.1.4",
+    "date-fns": "^2.30.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-easy-crop": "^5.4.1",
     "react-image-crop": "^11.0.7",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^6.22.1",
     "react-toastify": "^11.0.5",
-    "react-tsparticles": "^2.12.2"
+    "react-tsparticles": "^2.12.2",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.5",

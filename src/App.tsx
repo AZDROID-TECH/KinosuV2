@@ -1,32 +1,35 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { ThemeProvider, CssBaseline, Box, CircularProgress } from '@mui/material';
+import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import { CssBaseline, Box, CircularProgress } from '@mui/material';
+import { FriendProvider } from './context/FriendContext';
+import { OnlineStatusProvider } from './context/OnlineStatusContext';
+import { ToastContainer, Slide } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminLayout from './components/AdminLayout';
-import UserProfilePage from './pages/UserProfilePage';
-import NotFound from './pages/NotFound';
 
-// react-toastify imports
-import { ToastContainer, Slide } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-// Xüsusi Toast CSS (əgər yaradılacaqsa)
-import '../src/styles/customToast.css';
-
-const ManageCommentsPage = lazy(() => import('./pages/Admin/ManageCommentsPage'));
+// Lazy load components
 const LandingPage = lazy(() => import('./pages/LandingPage'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Profile = lazy(() => import('./pages/Profile'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
 const AdminHomePage = lazy(() => import('./pages/Admin/AdminHomePage'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
+const ManageCommentsPage = lazy(() => import('./pages/Admin/ManageCommentsPage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));
 const MovieDetails = lazy(() => import('./pages/MovieDetails/MovieDetails'));
+const FriendsPage = lazy(() => import('./pages/FriendsPage'));
+const NewslettersPage = lazy(() => import('./pages/NewslettersPage'));
+const NewsletterDetailPage = lazy(() => import('./pages/NewsletterDetailPage'));
+const AdminNewslettersPage = lazy(() => import('./pages/Admin/AdminNewslettersPage'));
 
 const LoadingFallback = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 128px)' }}>
@@ -34,6 +37,7 @@ const LoadingFallback = () => (
   </Box>
 );
 
+// LocationAware wrapper component to determine routes
 const AppContent = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -52,10 +56,13 @@ const AppContent = () => {
             <Route path="/user/:userId" element={<UserProfilePage />} />
             <Route path="/user/username/:username" element={<UserProfilePage />} />
             <Route path="/movie/:movieId" element={<MovieDetails />} />
+            <Route path="/newsletters" element={<NewslettersPage />} />
+            <Route path="/newsletters/:id" element={<NewsletterDetailPage />} />
             
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/friends" element={<FriendsPage />} />
             </Route>
             
             <Route path="/admin" element={<AdminRoute />}>
@@ -63,6 +70,7 @@ const AppContent = () => {
                 <Route index element={<AdminHomePage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="comments" element={<ManageCommentsPage />} />
+                <Route path="newsletters" element={<AdminNewslettersPage />} />
               </Route>
             </Route>
             
@@ -91,12 +99,16 @@ const AppContent = () => {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <ThemeProvider>
-          <CssBaseline />
-          <AppContent />
-        </ThemeProvider>
-      </AuthProvider>
+      <CustomThemeProvider>
+        <CssBaseline />
+        <AuthProvider>
+          <OnlineStatusProvider>
+            <FriendProvider>
+              <AppContent />
+            </FriendProvider>
+          </OnlineStatusProvider>
+        </AuthProvider>
+      </CustomThemeProvider>
     </Router>
   );
 }

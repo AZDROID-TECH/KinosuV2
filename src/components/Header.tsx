@@ -13,12 +13,22 @@ import {
   Skeleton,
   ButtonGroup,
   IconButton,
+  Badge,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
 } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useFriends } from '../context/FriendContext';
+import { useState, useEffect } from 'react';
 import 'boxicons/css/boxicons.min.css';
+import StatusAvatar from './Common/StatusAvatar';
+import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { getLatestNewsletters, getUnreadCount, markNewsletterAsViewed, Newsletter } from '../services/newsletterService';
+import { format } from 'date-fns';
+import { apiClient } from '../services/apiClient';
 
 // Ortak stiller
 const commonStyles = {
@@ -30,18 +40,29 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { darkMode, toggleDarkMode } = useCustomTheme();
-  const { isLoggedIn, username, avatar, logout, isLoadingAuth, isAdmin } = useAuth();
+  const { isLoggedIn, username, avatar, logout, isLoadingAuth, isAdmin, userId } = useAuth();
+  const { isUserOnline } = useOnlineStatus();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
+  const [newsletterAnchorEl, setNewsletterAnchorEl] = useState<null | HTMLElement>(null);
+  const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [loadingNewsletters, setLoadingNewsletters] = useState<boolean>(false);
   const theme = useTheme();
-
-  // Giriş ve kayıt sayfalarında veya Landing Page'de butonları gizlemek/göstermek için kontrol
-  const isLoginPage = location.pathname === '/login';
-  const isRegisterPage = location.pathname === '/register';
-  const isResetPage = location.pathname.includes('/reset-password');
-  const isLandingPage = location.pathname === '/';
   
-  // Sadece Login/Register/Reset sayfalarında Header'ı daha sade yap
-  const isSimpleHeader = isLoginPage || isRegisterPage || isResetPage;
+  // Admin sayfalarında Header'ı tamamen gizle
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+  
+  const { 
+    incomingRequests, 
+    requestsCount, 
+    acceptFriendRequest, 
+    rejectFriendRequest, 
+    refreshIncomingRequests,
+    refreshRequestsCount
+  } = useFriends();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -55,6 +76,168 @@ const Header = () => {
     handleMenuClose();
     logout();
   };
+
+  const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setNotificationAnchorEl(event.currentTarget);
+    refreshIncomingRequests();
+  };
+
+  const handleNotificationMenuClose = () => {
+    setNotificationAnchorEl(null);
+  };
+
+  // Newsletter popup menu functions
+  const handleNewsletterMenuOpen = async (event: React.MouseEvent<HTMLElement>) => {
+    setNewsletterAnchorEl(event.currentTarget);
+    
+    // Popup açıldığında önce ekranı temizle ve bir loading spinner göster
+    setNewsletters([]);
+    setLoadingNewsletters(true);
+    
+    // Her açılışta taze veri almaya zorla
+    await fetchNewsletters();
+  };
+
+  const handleNewsletterMenuClose = () => {
+    setNewsletterAnchorEl(null);
+  };
+
+  const fetchNewsletters = async () => {
+    setLoadingNewsletters(true);
+    try {
+      // Orijinal newsletter servisine geri dönüş yapıyoruz
+      const response = await getLatestNewsletters(5);
+      if (response.success) {
+        setNewsletters(response.data);
+      } else {
+        console.error("Newsletter service error:", response);
+        setNewsletters([]);
+      }
+    } catch (error) {
+      console.error('Newsletters fetch error:', error);
+      setNewsletters([]);
+    } finally {
+      setLoadingNewsletters(false);
+    }
+  };
+
+  const fetchUnreadCount = async (forceRefresh = false) => {
+    if (!isLoggedIn) return;
+    
+    try {
+      const response = await getUnreadCount();
+      if (response.success) {
+        setUnreadCount(response.count);
+      }
+    } catch (error) {
+      console.error('Unread count fetch error:', error);
+    }
+  };
+
+  const handleNewsletterClick = async (id: number) => {
+    try {
+      // Backend'e görüntülenme bildirimi yap
+      await markNewsletterAsViewed(id);
+      
+      // Kullanıcıya görsel feedback ver - listeden kaldır
+      setNewsletters(prev => prev.filter(item => item.id !== id));
+      
+      // Badge sayısını azalt (hata olmadığı sürece)
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Popup'ı kapat
+      handleNewsletterMenuClose();
+      
+      // Detay sayfasına git
+      navigate(`/newsletters/${id}`);
+    } catch (error) {
+      console.error('Mark as viewed error:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUnreadCount();
+      
+      // Refresh unread count periodically (every 5 minutes)
+      const interval = setInterval(fetchUnreadCount, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      refreshRequestsCount();
+    }
+  }, [isLoggedIn, refreshRequestsCount]);
+
+  const handleAcceptRequest = async (requestId: number) => {
+    await acceptFriendRequest(requestId);
+    refreshRequestsCount();
+  };
+
+  const handleRejectRequest = async (requestId: number) => {
+    await rejectFriendRequest(requestId);
+    refreshRequestsCount();
+  };
+
+  // Giriş ve kayıt sayfalarında veya Landing Page'de butonları gizlemek/göstermek için kontrol
+  const isLoginPage = location.pathname === '/login';
+  const isRegisterPage = location.pathname === '/register';
+  const isResetPage = location.pathname.includes('/reset-password');
+  const isLandingPage = location.pathname === '/';
+  
+  // Sadece Login/Register/Reset sayfalarında Header'ı daha sade yap
+  const isSimpleHeader = isLoginPage || isRegisterPage || isResetPage;
+
+  // Kullanıcı menüsünü açan avatar bileşeni
+  const userAvatar = isLoadingAuth ? (
+    <Skeleton variant="circular" width={40} height={40} />
+  ) : (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        cursor: 'pointer',
+        p: 0.5,
+        borderRadius: 2,
+        transition: 'all 0.3s ease',
+        ml: { xs: 0, sm: 0.5 },
+        '&:hover': {
+          bgcolor: alpha(theme.palette.common.white, 0.15),
+          transform: 'translateY(-2px)',
+        },
+      }}
+      onClick={handleMenuOpen}
+    >
+      <StatusAvatar
+        src={avatar ? avatar : undefined}
+        alt={username || 'İstifadəçi'}
+        isOnline={userId ? isUserOnline(userId) : false}
+        size={37}
+        sx={{
+          boxShadow: '0 3px 6px rgba(0,0,0,0.16)',
+          transition: 'all 0.3s ease',
+          border: `2px solid ${alpha(theme.palette.common.white, 0.7)}`,
+        }}
+      />
+      <Typography
+        variant="body1"
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          fontWeight: 600,
+          fontSize: '1rem',
+          fontFamily: "'Montserrat', sans-serif",
+          letterSpacing: '0.3px',
+          color: isSimpleHeader ? '#fff' : (darkMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.95)'),
+          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        }}
+      >
+        {username}
+      </Typography>
+    </Box>
+  );
 
   return (
     <AppBar 
@@ -138,9 +321,11 @@ const Header = () => {
             >
               <i className={`bx ${darkMode ? 'bxs-sun' : 'bxs-moon'}`} style={{ fontSize: '22px' }}></i>
             </IconButton>
+            
+            {/* Newsletter ikonu */}
             {isLoggedIn && !isLoadingAuth && (
               <IconButton
-                onClick={() => { /* Notification logic will be added later */ }}
+                onClick={handleNewsletterMenuOpen}
                 sx={{
                   color: isSimpleHeader ? theme.palette.text.primary : '#fff',
                   padding: '8px',
@@ -152,7 +337,47 @@ const Header = () => {
                   }
                 }}
               >
-                <i className='bx bxs-bell' style={{ fontSize: '22px' }}></i>
+                <Badge 
+                  badgeContent={unreadCount} 
+                  color="error"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.65rem',
+                      fontWeight: 'bold'
+                    }
+                  }}
+                >
+                  <i className='bx bxs-news' style={{ fontSize: '22px' }}></i>
+                </Badge>
+              </IconButton>
+            )}
+            
+            {isLoggedIn && !isLoadingAuth && (
+              <IconButton
+                onClick={handleNotificationMenuOpen}
+                sx={{
+                  color: isSimpleHeader ? theme.palette.text.primary : '#fff',
+                  padding: '8px',
+                  transition: 'transform 0.3s ease, color 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    color: darkMode ? theme.palette.secondary.light : theme.palette.primary.light,
+                    bgcolor: 'transparent',
+                  }
+                }}
+              >
+                <Badge 
+                  badgeContent={requestsCount} 
+                  color="error"
+                  sx={{
+                    '& .MuiBadge-badge': {
+                      fontSize: '0.65rem',
+                      fontWeight: 'bold'
+                    }
+                  }}
+                >
+                  <i className='bx bxs-bell' style={{ fontSize: '22px' }}></i>
+                </Badge>
               </IconButton>
             )}
           </ButtonGroup>
@@ -161,151 +386,259 @@ const Header = () => {
             <Skeleton variant="circular" width={35} height={35} sx={{ ml: { xs: 0, sm: 0.5 } }} />
           ) : isLoggedIn ? (
             <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  cursor: 'pointer',
-                  p: 0.5,
-                  borderRadius: 2,
-                  transition: 'all 0.3s ease',
-                  ml: { xs: 0, sm: 0.5 },
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.common.white, 0.15),
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-                onClick={handleMenuOpen}
-              >
-                <Avatar
-                  src={avatar || undefined}
-                  alt={username || 'User'}
-                  sx={{
-                    bgcolor: darkMode ? '#9c27b0' : '#3f51b5',
-                    width: 35,
-                    height: 35,
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                    border: '2px solid rgba(255, 255, 255, 0.8)',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {!avatar && username?.[0].toUpperCase()}
-                </Avatar>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    display: { xs: 'none', sm: 'block' },
-                    fontWeight: 600,
-                    color: isSimpleHeader ? '#fff' : (darkMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.95)'),
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  {username}
-                </Typography>
-              </Box>
+              {userAvatar}
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
                 PaperProps={{
-                  elevation: 3,
+                  elevation: 5,
                   sx: {
-                    minWidth: '200px',
+                    minWidth: '220px',
                     mt: 1.5,
-                    borderRadius: 2,
-                    backdropFilter: 'blur(10px)',
+                    borderRadius: '16px',
+                    backdropFilter: 'blur(12px)',
                     backgroundColor: darkMode 
-                      ? alpha(theme.palette.background.paper, 0.9)
-                      : alpha('#ffffff', 0.9),
+                      ? alpha(theme.palette.background.paper, 0.92)
+                      : alpha('#ffffff', 0.98),
                     border: darkMode 
-                      ? '1px solid rgba(255, 255, 255, 0.1)' 
-                      : '1px solid rgba(0, 0, 0, 0.05)',
+                      ? '1px solid rgba(255, 255, 255, 0.12)' 
+                      : '1px solid rgba(0, 0, 0, 0.08)',
                     overflow: 'hidden',
-                    transition: 'all 0.3s ease',
+                    transition: 'all 0.2s ease',
                     boxShadow: darkMode
-                      ? '0 8px 32px rgba(0, 0, 0, 0.3)'
-                      : '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      ? '0 10px 40px rgba(0, 0, 0, 0.35)'
+                      : '0 10px 40px rgba(0, 0, 0, 0.15)',
+                    '&:before': {
+                      content: '""',
+                      display: 'block',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: darkMode 
+                        ? 'linear-gradient(90deg, #9c27b0, #3f51b5)'
+                        : 'linear-gradient(90deg, #5c6bc0, #7e57c2)',
+                    }
                   },
                 }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
+                {/* Kullanıcı Profil Özeti */}
+                <Box sx={{ 
+                  p: 2, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1.5,
+                  background: darkMode 
+                    ? 'linear-gradient(45deg, rgba(156, 39, 176, 0.1), rgba(63, 81, 181, 0.1))'
+                    : 'linear-gradient(45deg, rgba(92, 107, 192, 0.05), rgba(126, 87, 194, 0.05))',
+                  borderBottom: '1px solid',
+                  borderColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
+                  mb: 0.5
+                }}>
+                  <StatusAvatar
+                    src={avatar ? avatar : undefined}
+                    alt={username || 'İstifadəçi'}
+                    isOnline={userId ? isUserOnline(userId) : false}
+                    size={42}
+                    sx={{
+                      boxShadow: '0 3px 8px rgba(0,0,0,0.15)',
+                      transition: 'all 0.3s ease',
+                      border: `2px solid ${alpha(theme.palette.common.white, 0.9)}`,
+                    }}
+                  />
+                  <Box>
+                    <Typography variant="subtitle1" 
+                      sx={{ 
+                        fontWeight: 700,
+                        lineHeight: 1.2,
+                        fontSize: '0.95rem',
+                        color: darkMode ? theme.palette.primary.light : theme.palette.primary.main,
+                      }}
+                    >
+                      {username}
+                    </Typography>
+                    <Typography variant="caption" 
+                      sx={{ 
+                        display: 'block',
+                        color: darkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}
+                    >
+                      {isUserOnline(userId || 0) ? 'İndi onlayn' : 'Offlayn'}
+                    </Typography>
+                  </Box>
+                </Box>
+
                 <MenuItem 
                   onClick={() => {
                     handleMenuClose();
                     navigate('/profile');
                   }} 
                   sx={{ 
-                    py: 1.2,
+                    py: 1.5,
+                    px: 2,
                     transition: 'all 0.2s ease',
-                    color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.75)',
                     '&:hover': {
                       backgroundColor: darkMode 
-                        ? alpha('#9c27b0', 0.1)
-                        : alpha('#3f51b5', 0.05),
+                        ? alpha('#9c27b0', 0.12)
+                        : alpha('#3f51b5', 0.06),
                       color: darkMode ? '#bb86fc' : '#3f51b5',
+                      transform: 'translateX(4px)',
                     }
                   }}
                 >
                   <i className='bx bx-user' style={{ 
-                    marginRight: '8px', 
+                    marginRight: '12px', 
                     fontSize: '20px', 
-                    color: darkMode ? '#9c27b0' : '#3f51b5',
+                    color: darkMode ? '#bb86fc' : '#5c6bc0',
                     transition: 'color 0.2s ease',
                   }}></i>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontSize: '0.9rem', 
+                      fontWeight: 500,
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}
+                  >
                   Profilim
+                  </Typography>
                 </MenuItem>
+                <MenuItem 
+                  onClick={() => {
+                    handleMenuClose();
+                    navigate('/friends');
+                  }} 
+                  sx={{ 
+                    py: 1.5,
+                    px: 2,
+                    transition: 'all 0.2s ease',
+                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.75)',
+                    '&:hover': {
+                      backgroundColor: darkMode 
+                        ? alpha('#9c27b0', 0.12)
+                        : alpha('#3f51b5', 0.06),
+                      color: darkMode ? '#bb86fc' : '#3f51b5',
+                      transform: 'translateX(4px)',
+                    }
+                  }}
+                >
+                  <i className='bx bx-group' style={{ 
+                    marginRight: '12px', 
+                    fontSize: '20px', 
+                    color: darkMode ? '#bb86fc' : '#5c6bc0',
+                    transition: 'color 0.2s ease',
+                  }}></i>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontSize: '0.9rem', 
+                      fontWeight: 500,
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}
+                  >
+                  Dost siyahısı
+                  </Typography>
+                </MenuItem>
+                
                 {isAdmin && (
+                  <Box 
+                    sx={{ 
+                      mx: 2, 
+                      my: 1, 
+                      borderRadius: '10px', 
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: darkMode ? alpha('#9575cd', 0.3) : alpha('#7e57c2', 0.2),
+                      boxShadow: darkMode 
+                        ? '0 4px 15px rgba(97, 97, 255, 0.1)'
+                        : '0 4px 15px rgba(0, 0, 0, 0.05)',
+                      background: darkMode
+                        ? 'linear-gradient(45deg, rgba(103, 58, 183, 0.15), rgba(97, 97, 255, 0.1))'
+                        : 'linear-gradient(45deg, rgba(149, 117, 205, 0.08), rgba(126, 87, 194, 0.05))'
+                    }}
+                  >
                   <MenuItem 
                     onClick={() => {
                       handleMenuClose();
                       navigate('/admin');
                     }} 
                     sx={{ 
-                      py: 1.2,
+                        py: 1.5,
                       transition: 'all 0.2s ease',
-                      color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        color: darkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.75)',
                       '&:hover': {
                         backgroundColor: darkMode 
-                          ? alpha('#673ab7', 0.1)
-                          : alpha('#673ab7', 0.05),
+                            ? alpha('#673ab7', 0.2)
+                            : alpha('#673ab7', 0.1),
                         color: darkMode ? '#b39ddb' : '#673ab7',
+                          transform: 'translateY(-2px)',
                       }
                     }}
                   >
-                    <i className='bx bx-shield-quarter' style={{ 
-                      marginRight: '8px', 
+                      <i className='bx bxs-shield-alt-2' style={{ 
+                        marginRight: '12px', 
                       fontSize: '20px', 
-                      color: darkMode ? '#9575cd' : '#7e57c2',
+                        color: darkMode ? '#b39ddb' : '#673ab7',
                       transition: 'color 0.2s ease',
                     }}></i>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontSize: '0.9rem', 
+                          fontWeight: 600,
+                          fontFamily: "'Montserrat', sans-serif",
+                          letterSpacing: '0.3px'
+                        }}
+                      >
                     Admin Paneli
+                      </Typography>
                   </MenuItem>
+                  </Box>
                 )}
                 <Divider sx={{ 
                   my: 0.5,
                   borderColor: darkMode 
-                    ? 'rgba(255, 255, 255, 0.1)' 
+                    ? 'rgba(255, 255, 255, 0.08)' 
                     : 'rgba(0, 0, 0, 0.05)',
                 }} />
-                <MenuItem onClick={handleLogout} sx={{ 
-                  color: 'error.main',
-                  py: 1.2,
+                <MenuItem 
+                  onClick={handleLogout} 
+                  sx={{ 
+                    py: 1.5,
+                    px: 2,
+                    mt: 0.5,
                   transition: 'all 0.2s ease',
+                    color: darkMode ? alpha('#f44336', 0.9) : alpha('#f44336', 0.8),
                   '&:hover': {
                     backgroundColor: darkMode 
-                      ? 'rgba(244, 67, 54, 0.08)' 
-                      : 'rgba(244, 67, 54, 0.05)',
+                        ? 'rgba(244, 67, 54, 0.12)' 
+                        : 'rgba(244, 67, 54, 0.08)',
                     color: '#f44336',
+                      transform: 'translateX(4px)',
                   }
-                }}>
+                  }}
+                >
                   <i className='bx bx-log-out' style={{ 
-                    marginRight: '8px', 
+                    marginRight: '12px', 
                     fontSize: '20px',
                     transition: 'color 0.2s ease',
                   }}></i>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontSize: '0.9rem', 
+                      fontWeight: 500,
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}
+                  >
                   Çıxış
+                  </Typography>
                 </MenuItem>
               </Menu>
             </>
@@ -336,6 +669,415 @@ const Header = () => {
               </Button>
             )
           )}
+
+          {/* Newsletter Menu */}
+          <Menu
+            anchorEl={newsletterAnchorEl}
+            open={Boolean(newsletterAnchorEl)}
+            onClose={handleNewsletterMenuClose}
+            PaperProps={{
+              elevation: 5,
+              sx: {
+                minWidth: '320px',
+                maxWidth: '380px',
+                mt: 1.5,
+                borderRadius: '16px',
+                backdropFilter: 'blur(12px)',
+                backgroundColor: darkMode 
+                  ? alpha(theme.palette.background.paper, 0.92)
+                  : alpha('#ffffff', 0.98),
+                border: darkMode 
+                  ? '1px solid rgba(255, 255, 255, 0.12)' 
+                  : '1px solid rgba(0, 0, 0, 0.08)',
+                overflow: 'hidden',
+                transition: 'all 0.2s ease',
+                boxShadow: darkMode
+                  ? '0 10px 40px rgba(0, 0, 0, 0.35)'
+                  : '0 10px 40px rgba(0, 0, 0, 0.15)',
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: darkMode 
+                    ? 'linear-gradient(90deg, #9c27b0, #3f51b5)'
+                    : 'linear-gradient(90deg, #5c6bc0, #7e57c2)',
+                }
+              },
+            }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <Box sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              background: darkMode 
+                ? 'linear-gradient(45deg, rgba(156, 39, 176, 0.1), rgba(63, 81, 181, 0.1))'
+                : 'linear-gradient(45deg, rgba(92, 107, 192, 0.05), rgba(126, 87, 194, 0.05))',
+              borderBottom: '1px solid',
+              borderColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
+            }}>
+              <Typography variant="subtitle1" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  color: darkMode ? theme.palette.primary.light : theme.palette.primary.main,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <i className='bx bxs-news' style={{ fontSize: '22px' }}></i>
+                Yeniliklər
+              </Typography>
+            </Box>
+
+            {loadingNewsletters ? (
+              <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {[1, 2, 3].map((_, index) => (
+                  <Box key={index} sx={{ display: 'flex', gap: 1 }}>
+                    <Skeleton variant="rectangular" width={50} height={50} sx={{ borderRadius: 1 }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Skeleton variant="text" width="80%" height={24} />
+                      <Skeleton variant="text" width="60%" height={20} />
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : newsletters.length === 0 ? (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Hal-hazırda yenilik yoxdur
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {newsletters.map((newsletter) => (
+                  <MenuItem 
+                    key={newsletter.id}
+                    onClick={() => handleNewsletterClick(newsletter.id)}
+                    sx={{ 
+                      py: 1.5,
+                      px: 2,
+                      transition: 'all 0.2s ease',
+                      color: darkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.75)',
+                      backgroundColor: newsletter.is_viewed 
+                        ? 'transparent' 
+                        : (darkMode ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.primary.main, 0.05)),
+                      '&:hover': {
+                        backgroundColor: darkMode 
+                          ? alpha('#9c27b0', 0.12)
+                          : alpha('#3f51b5', 0.06),
+                        color: darkMode ? '#bb86fc' : '#3f51b5',
+                      },
+                      position: 'relative',
+                      borderLeft: newsletter.is_important 
+                        ? `3px solid ${theme.palette.error.main}`
+                        : (newsletter.is_viewed 
+                            ? 'none'
+                            : `3px solid ${theme.palette.primary.main}`),
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          fontWeight: newsletter.is_viewed ? 400 : 600,
+                          fontSize: '0.9rem',
+                          pr: 2, // Space for date
+                          color: newsletter.is_important 
+                            ? theme.palette.error.main
+                            : 'inherit'
+                        }}
+                      >
+                        {newsletter.title}
+                      </Typography>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        mt: 0.5,
+                        justifyContent: 'space-between'
+                      }}>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            fontSize: '0.75rem',
+                            color: 'text.secondary',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
+                          }}
+                        >
+                          <i className='bx bx-calendar' style={{ fontSize: '14px' }}></i>
+                          {format(new Date(newsletter.created_at), 'dd.MM.yyyy')}
+                        </Typography>
+                        
+                        {!newsletter.is_viewed && (
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: theme.palette.primary.main,
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Box>
+            )}
+            
+            <Divider />
+            <MenuItem
+              onClick={() => {
+                handleNewsletterMenuClose();
+                navigate('/newsletters');
+              }}
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                py: 1.5,
+                color: theme.palette.primary.main,
+                fontWeight: 500,
+                textAlign: 'center',
+                '&:hover': {
+                  backgroundColor: darkMode 
+                    ? alpha(theme.palette.primary.main, 0.1)
+                    : alpha(theme.palette.primary.main, 0.05),
+                }
+              }}
+            >
+              Bütün Yeniliklər
+            </MenuItem>
+          </Menu>
+
+          {/* Bildirim Menüsü */}
+          <Menu
+            anchorEl={notificationAnchorEl}
+            open={Boolean(notificationAnchorEl)}
+            onClose={handleNotificationMenuClose}
+            PaperProps={{
+              elevation: 5,
+              sx: {
+                minWidth: '320px',
+                maxWidth: '380px',
+                mt: 1.5,
+                borderRadius: '16px',
+                backdropFilter: 'blur(12px)',
+                backgroundColor: darkMode 
+                  ? alpha(theme.palette.background.paper, 0.92)
+                  : alpha('#ffffff', 0.98),
+                border: darkMode 
+                  ? '1px solid rgba(255, 255, 255, 0.12)' 
+                  : '1px solid rgba(0, 0, 0, 0.08)',
+                overflow: 'hidden',
+                transition: 'all 0.2s ease',
+                boxShadow: darkMode
+                  ? '0 10px 40px rgba(0, 0, 0, 0.35)'
+                  : '0 10px 40px rgba(0, 0, 0, 0.15)',
+                '&:before': {
+                  content: '""',
+                  display: 'block',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: darkMode 
+                    ? 'linear-gradient(90deg, #9c27b0, #3f51b5)'
+                    : 'linear-gradient(90deg, #5c6bc0, #7e57c2)',
+                }
+              },
+            }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <Box sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              background: darkMode 
+                ? 'linear-gradient(45deg, rgba(156, 39, 176, 0.1), rgba(63, 81, 181, 0.1))'
+                : 'linear-gradient(45deg, rgba(92, 107, 192, 0.05), rgba(126, 87, 194, 0.05))',
+              borderBottom: '1px solid',
+              borderColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
+            }}>
+              <Typography variant="subtitle1" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  color: darkMode ? theme.palette.primary.light : theme.palette.primary.main,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <i className='bx bxs-bell' style={{ fontSize: '22px' }}></i>
+                Bildirişlər
+              </Typography>
+            </Box>
+            
+            {incomingRequests.length === 0 ? (
+              <Box sx={{ 
+                p: 3, 
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1,
+              }}>
+                <i className='bx bx-bell-off' style={{ 
+                  fontSize: '32px', 
+                  color: darkMode ? alpha(theme.palette.text.secondary, 0.5) : alpha(theme.palette.text.secondary, 0.4)
+                }}></i>
+                <Typography variant="body2" color="text.secondary">
+                  Heç bir yeni bildiriş yoxdur
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                {/* Arkadaşlık İstekleri Başlığı */}
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    px: 2, 
+                    py: 1, 
+                    display: 'block', 
+                    fontWeight: 600,
+                    color: darkMode ? alpha(theme.palette.text.primary, 0.7) : theme.palette.text.secondary,
+                    bgcolor: darkMode ? alpha(theme.palette.background.paper, 0.5) : alpha(theme.palette.background.paper, 0.4)
+                  }}
+                >
+                  Dostluq İstəkləri ({incomingRequests.length})
+                </Typography>
+                
+                {/* İstekler Listesi */}
+                <Box sx={{ maxHeight: '320px', overflow: 'auto' }}>
+                  {incomingRequests.map((request) => (
+                    <Box key={request.id} sx={{ 
+                      borderBottom: '1px solid', 
+                      borderColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: darkMode 
+                          ? alpha(theme.palette.primary.dark, 0.08)
+                          : alpha(theme.palette.primary.light, 0.05),
+                      }
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5 }}>
+                        <ListItemAvatar sx={{ minWidth: 'auto', mr: 1.5 }}>
+                          <Avatar 
+                            src={request.sender?.avatar_url || undefined} 
+                            alt={request.sender?.username}
+                            sx={{ 
+                              width: 42, 
+                              height: 42,
+                              boxShadow: `0 3px 8px ${alpha(theme.palette.common.black, 0.1)}`,
+                              border: `2px solid ${alpha(theme.palette.background.paper, 0.8)}`,
+                            }}
+                          >
+                            {!request.sender?.avatar_url && request.sender?.username?.[0].toUpperCase()}
+                          </Avatar>
+                        </ListItemAvatar>
+                        
+                        <Box sx={{ flexGrow: 1, mr: 1, overflow: 'hidden' }}>
+                          <Typography 
+                            variant="body2" 
+                            component={RouterLink} 
+                            to={`/user/${request.sender?.id}`}
+                            sx={{ 
+                              fontWeight: 600, 
+                              fontSize: '0.9rem',
+                              color: darkMode ? theme.palette.primary.light : theme.palette.primary.main,
+                              textDecoration: 'none',
+                              '&:hover': { textDecoration: 'underline' }
+                            }}
+                            onClick={handleNotificationMenuClose}
+                          >
+                            {request.sender?.username}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            noWrap 
+                            display="block"
+                            sx={{ mt: 0.5, fontSize: '0.75rem' }}
+                          >
+                            sizə dostluq istəyi göndərib
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <IconButton 
+                            size="small" 
+                            color="primary" 
+                            onClick={() => handleAcceptRequest(request.id)}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                              '&:hover': { 
+                                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <i className='bx bx-check' style={{ fontSize: '18px' }}></i>
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => handleRejectRequest(request.id)}
+                            sx={{ 
+                              bgcolor: alpha(theme.palette.error.main, 0.1),
+                              '&:hover': { 
+                                bgcolor: alpha(theme.palette.error.main, 0.2),
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <i className='bx bx-x' style={{ fontSize: '18px' }}></i>
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </>
+            )}
+            
+            {incomingRequests.length > 0 && (
+              <MenuItem
+                onClick={() => {
+                  handleNotificationMenuClose();
+                  navigate('/friends');
+                }}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  py: 1.5,
+                  color: theme.palette.primary.main,
+                  fontWeight: 500,
+                  textAlign: 'center',
+                  '&:hover': {
+                    backgroundColor: darkMode 
+                      ? alpha(theme.palette.primary.main, 0.1)
+                      : alpha(theme.palette.primary.main, 0.05),
+                  }
+                }}
+              >
+                Bütün İstəkləri Göstər
+              </MenuItem>
+            )}
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

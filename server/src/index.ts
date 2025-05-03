@@ -1,11 +1,14 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 import authRoutes from './routes/auth';
 import movieRoutes from './routes/movies';
 import userRoutes from './routes/user';
 import healthRoutes from './routes/health';
 import commentRoutes from './routes/comments';
 import statsRoutes from './routes/stats';
+import friendRoutes from './routes/friends';
+import newsletterRoutes from './routes/newsletters';
 import { rateLimiter } from './middleware/rateLimiter';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -13,11 +16,15 @@ import fs from 'fs';
 import { TABLES, getClient } from './utils/supabase';
 import { logger } from './utils/logger';
 import axios from 'axios';
+import { initializeSocketServer } from './services/onlineStatusService';
 
 // .env faylını yüklə - main dotenv yüklemesi
 dotenv.config();
 
 const app = express();
+
+// HTTP Server oluşturma (Socket.io için)
+const server = http.createServer(app);
 
 // Supabase cədvəl strukturunu yoxla və yarat (əgər yoxdursa)
 const initializeDatabase = async () => {
@@ -63,6 +70,27 @@ const initializeDatabase = async () => {
     } catch (error) {
       // Sessizce devam et
     }
+    
+    // Son görülme sütunu kontrol et ve varsa kullanıcı tablosuna ekle
+    try {
+      const { error } = await client
+        .from('users')
+        .select('last_seen')
+        .limit(1);
+      
+      if (error && error.message.includes('column "last_seen" does not exist')) {
+        // last_seen sütunu oluştur
+        console.log('Kullanıcılar tablosuna son görülme sütunu ekleniyor...');
+        const { error: alterError } = await client.rpc('create_last_seen_column');
+        if (alterError) {
+          console.error('Son görülme sütunu eklenemedi:', alterError);
+        } else {
+          console.log('Son görülme sütunu başarıyla eklendi');
+        }
+      }
+    } catch (error) {
+      // Sessizce devam et
+    }
   } catch (error) {
     // Sessizce devam et
   }
@@ -89,6 +117,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/newsletters', newsletterRoutes);
 
 // Frontend statik dosyalarını sunma - dağıtım klasörü
 const distPath = path.join(__dirname, '../public');
@@ -111,13 +141,16 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// Socket.io server'ı başlat
+const io = initializeSocketServer(server);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server ${PORT} portunda çalışıyor`);
 
   // --- Render Free Tier Uyanıq Tutma --- 
   if (process.env.NODE_ENV === 'production' && process.env.CLIENT_URL) {
-    const PING_INTERVAL_MS = 5 * 60 * 1000; // 5 dəqiqə
+    const PING_INTERVAL_MS = 1 * 60 * 1000; // 1 dəqiqə
     const targetUrl = process.env.CLIENT_URL;
 
     console.log(`Render uyanıq tutma servisi ${targetUrl} üçün ${PING_INTERVAL_MS / 60000} dəqiqə intervalı ilə aktiv edildi.`);
@@ -125,9 +158,24 @@ app.listen(PORT, () => {
     const pingInterval = setInterval(async () => {
       try {
         const response = await axios.get(targetUrl);
-        console.log(`Render uyanıq tutma: ${targetUrl} uğurla ping edildi (Status: ${response.status}).`);
-      } catch (error: any) {
-        logger.error(`Render uyanıq tutma zamanı xəta: ${targetUrl} - ${error.message}`);
+        console.log(`[${new Date().toISOString()}] Ping: ${targetUrl} uğurla ping edildi (Status: ${response.status}).`);
+      } catch (error) {
+        // logger.error yerine console.error kullanıyoruz
+        console.error(`[${new Date().toISOString()}] Ping Xəta: ${targetUrl} - ${error instanceof Error ? error.message : 'Bilinməyən xəta'}`);
+        
+        // Hatayla ilgili daha fazla bilgi
+        console.error('Ping xəta detalları:', error);
+        
+        // Bağlantı hatası sonrası yeniden deneme (opsiyonel)
+        setTimeout(async () => {
+          try {
+            console.log(`[${new Date().toISOString()}] Təkrar ping cəhdi...`);
+            const retryResponse = await axios.get(targetUrl, { timeout: 10000 });
+            console.log(`[${new Date().toISOString()}] Təkrar ping uğurlu: ${retryResponse.status}`);
+          } catch (retryError) {
+            console.error(`[${new Date().toISOString()}] Təkrar ping uğursuz:`, retryError instanceof Error ? retryError.message : 'Bilinməyən xəta');
+          }
+        }, 15000); // 15 saniye sonra tekrar dene
       }
     }, PING_INTERVAL_MS);
 
@@ -137,6 +185,8 @@ app.listen(PORT, () => {
       console.log('Render uyanıq tutma intervalı SIGTERM siqnalı ilə təmizləndi.');
       process.exit(0);
     });
+  } else {
+    console.log('Render uyanıq tutma servisi aktiv deyil: NODE_ENV=production və CLIENT_URL təyin edilməlidir.');
   }
   // --- Render Free Tier Uyanıq Tutma Sonu ---
 }); 

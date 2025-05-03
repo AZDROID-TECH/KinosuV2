@@ -160,9 +160,9 @@ const LandingPage = () => {
                 textShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : 'none',
               }}
             >
-              Film Dünyanız,
+              Sosial Film
               <br />
-              Sizin Nəzarətinizdə.
+              Platforması
             </Typography>
             <Typography 
               variant="h6" 
@@ -174,7 +174,7 @@ const LandingPage = () => {
                 maxWidth: { md: '500px' },
               }}
             >
-              Minlərlə film arasında axtarın, öz izləmə siyahılarınızı yaradın, qiymətləndirin və film təcrübənizi fərdiləşdirin.
+              Filmləri kəşf edin, dostlarınızla bölüşün və sosial film təcrübəsinin bir parçası olun.
             </Typography>
             <Button 
               component={RouterLink} 

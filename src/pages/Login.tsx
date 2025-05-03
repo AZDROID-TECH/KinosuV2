@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
@@ -15,6 +15,7 @@ import {
   useTheme,
   useMediaQuery,
   alpha,
+  Alert,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import 'boxicons/css/boxicons.min.css';
@@ -22,7 +23,7 @@ import { authAPI } from '../services/api';
 import { showErrorToast, showSuccessToast } from '../utils/toastHelper';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, isLoggedIn } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -35,15 +36,42 @@ const Login = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const isDarkMode = theme.palette.mode === 'dark';
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // URL'den 'expired' parametresini kontrol et
+  const queryParams = new URLSearchParams(location.search);
+  const tokenExpired = queryParams.get('expired') === 'true';
+
+  useEffect(() => {
+    // Eğer kullanıcı zaten giriş yapmışsa dashboard'a yönlendir
+    if (isLoggedIn) {
+      navigate('/dashboard');
+    }
+    
+    // Eğer token süresi dolmuşsa bildirim göster
+    if (tokenExpired) {
+      showErrorToast('Sessiyanız müddəti bitib. Zəhmət olmasa yenidən daxil olun.');
+    }
+  }, [isLoggedIn, navigate, tokenExpired]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.username.trim() || !formData.password.trim()) {
+      showErrorToast('İstifadəçi adı və şifrə daxil edin');
+      return;
+    }
 
     try {
       await login(formData.username, formData.password);
-      showSuccessToast('Uğurla daxil oldunuz!');
-    } catch (err: any) {
-      showErrorToast(err.message || 'Giriş zamanı xəta baş verdi.');
+    } catch (error) {
+      console.error('Login error:', error);
+      if (typeof error === 'string') {
+        showErrorToast(error);
+      } else {
+        showErrorToast('Daxil olma zamanı xəta baş verdi');
+      }
     }
   };
 

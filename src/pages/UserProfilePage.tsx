@@ -18,18 +18,31 @@ import {
   alpha,
   Rating,
   CircularProgress,
-  Badge
+  Badge,
+  Button,
+  ButtonGroup,
+  Menu,
+  MenuItem,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import { userAPI } from '../services/api';
 import { formatDate } from '../utils/movieHelpers';
-import { LocalMovies, Visibility, CheckCircle, CalendarMonth, Person } from '@mui/icons-material';
+import { LocalMovies, Visibility, CheckCircle, CalendarMonth, Person, PersonAdd, PersonRemove } from '@mui/icons-material';
 import MovieIcon from '@mui/icons-material/Movie';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import StarIcon from '@mui/icons-material/Star';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
 import { keyframes } from '@mui/system';
+import { useAuth } from '../context/AuthContext';
+import { useFriends, FriendshipStatusResponse } from '../context/FriendContext';
+import { showSuccessToast, showErrorToast } from '../utils/toastHelper';
+import StatusAvatar from '../components/Common/StatusAvatar';
+import { useOnlineStatus } from '../context/OnlineStatusContext';
 
 // Online durumu için pulse animasyon
 const pulseAnimation = keyframes`
@@ -100,10 +113,21 @@ const UserProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const materialTheme = useTheme();
   const { darkMode } = useCustomTheme();
+  const { isLoggedIn, userId: loggedInUserId } = useAuth();
+  const { checkFriendshipStatus, sendFriendRequest, removeFriend } = useFriends();
+  const { isUserOnline } = useOnlineStatus();
   
   const [profile, setProfile] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatusResponse | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [sortAnchorEl, setSortAnchorEl] = useState<null | HTMLElement>(null);
+  const [currentFilter, setCurrentFilter] = useState<string>('all');
+  const [currentSort, setCurrentSort] = useState<string>('rating');
+  const [visibleMovieCount, setVisibleMovieCount] = useState<number>(6);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -132,6 +156,114 @@ const UserProfilePage: React.FC = () => {
     
     fetchProfile();
   }, [userId, username]);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!isLoggedIn || !profile || profile.id === loggedInUserId) {
+        return;
+      }
+      
+      setStatusLoading(true);
+      try {
+        const status = await checkFriendshipStatus(profile.id);
+        setFriendshipStatus(status);
+      } catch (error) {
+        console.error('Dostluq durumu yoxlanılarkən xəta:', error);
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+    
+    checkStatus();
+  }, [isLoggedIn, profile, loggedInUserId, checkFriendshipStatus]);
+
+  const handleSendFriendRequest = async () => {
+    if (!profile) return;
+    
+    setActionLoading(true);
+    try {
+      await sendFriendRequest(profile.id);
+      const status = await checkFriendshipStatus(profile.id);
+      setFriendshipStatus(status);
+    } catch (error) {
+      console.error('Dostluq istəyi göndərilməsi zamanı xəta:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveFriend = async () => {
+    if (!profile) return;
+    
+    setActionLoading(true);
+    try {
+      await removeFriend(profile.id);
+      const status = await checkFriendshipStatus(profile.id);
+      setFriendshipStatus(status);
+      showSuccessToast('Dostluq əlaqəsi silindi');
+    } catch (error) {
+      console.error('Dostluq əlaqəsi silinərkən xəta:', error);
+      showErrorToast('Dostluq əlaqəsi silinə bilmədi');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Arkadaşlık durumuna göre butonları render et
+  const renderFriendshipButtons = () => {
+    if (!friendshipStatus) return null;
+
+    if (statusLoading) {
+      return <CircularProgress size={24} />;
+    }
+
+    if (friendshipStatus.status === 'pending') {
+      if (friendshipStatus.message.includes('göndərilmiş')) {
+        return (
+          <Button
+            variant="outlined"
+            fullWidth
+            color="warning"
+            startIcon={<i className="bx bx-time"></i>}
+            disabled
+          >
+            İstək göndərildi
+          </Button>
+        );
+      } else {
+        // Gelen istekleri kabul/reddetme butonları burada olabilir
+        return null;
+      }
+    }
+
+    if (friendshipStatus.status === 'accepted') {
+      return (
+        <Button
+          variant="outlined"
+          fullWidth
+          color="error"
+          startIcon={<PersonRemove />}
+          disabled={actionLoading}
+          onClick={handleRemoveFriend}
+        >
+          {actionLoading ? <CircularProgress size={24} color="inherit" /> : 'Dostluqdan Çıxar'}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        variant="contained"
+        fullWidth
+        color="primary"
+        startIcon={<PersonAdd />}
+        disabled={actionLoading}
+        onClick={handleSendFriendRequest}
+      >
+        {actionLoading ? <CircularProgress size={24} color="inherit" /> : 'Dost Əlavə Et'}
+      </Button>
+    );
+  };
 
   // Film durumuna göre icon ve renk belirleme
   const getStatusInfo = (status: string) => {
@@ -163,232 +295,171 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Skeleton variant="circular" width={120} height={120} sx={{ mb: 2 }} />
-                <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
-                <Skeleton variant="text" width="40%" height={24} sx={{ mb: 2 }} />
-              </Box>
-              <Divider sx={{ my: 2 }} />
-              <Skeleton variant="rectangular" height={120} />
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={8}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-              <Skeleton variant="text" width="40%" height={36} sx={{ mb: 2 }} />
-              <Skeleton variant="rectangular" height={100} />
-            </Paper>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
-              <Skeleton variant="text" width="60%" height={36} sx={{ mb: 2 }} />
-              <Skeleton variant="rectangular" height={240} />
-            </Paper>
-          </Grid>
-        </Grid>
-      </Container>
-    );
-  }
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+  
+  const handleFilterClose = (filter?: string) => {
+    if (filter) {
+      setCurrentFilter(filter);
+    }
+    setFilterAnchorEl(null);
+  };
+  
+  const handleSortClick = (event: React.MouseEvent<HTMLElement>) => {
+    setSortAnchorEl(event.currentTarget);
+  };
+  
+  const handleSortClose = (sort?: string) => {
+    if (sort) {
+      setCurrentSort(sort);
+    }
+    setSortAnchorEl(null);
+  };
+  
+  const getFilteredMovies = () => {
+    if (!profile || !profile.topRatedMovies) return [];
+    
+    if (currentFilter === 'all') return profile.topRatedMovies;
+    
+    return profile.topRatedMovies.filter(movie => movie.status === currentFilter);
+  };
+  
+  const getSortedMovies = () => {
+    const filteredMovies = getFilteredMovies();
+    
+    switch (currentSort) {
+      case 'rating':
+        return [...filteredMovies].sort((a, b) => b.user_rating - a.user_rating);
+      case 'imdb':
+        return [...filteredMovies].sort((a, b) => b.imdb_rating - a.imdb_rating);
+      case 'date':
+        return [...filteredMovies].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      default:
+        return filteredMovies;
+    }
+  };
+  
+  const getFilterLabel = (filter: string) => {
+    switch (filter) {
+      case 'all': return 'Bütün Filmlər';
+      case 'watchlist': return 'İzləməli';
+      case 'watching': return 'İzləyirəm';
+      case 'watched': return 'İzlədim';
+      default: return 'Filmlər';
+    }
+  };
+  
+  const getSortLabel = (sort: string) => {
+    switch (sort) {
+      case 'rating': return 'İstifadəçi Xalı';
+      case 'imdb': return 'IMDb Xalı';
+      case 'date': return 'Tarix';
+      default: return 'Sıralama';
+    }
+  };
 
-  if (error || !profile) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            p: 4, 
-            borderRadius: 3, 
-            textAlign: 'center',
-            bgcolor: alpha(materialTheme.palette.error.light, 0.1)
-          }}
-        >
-          <Typography variant="h5" color="error" gutterBottom>
-            {error || 'İstifadəçi profili tapılmadı'}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Axtardığınız istifadəçi mövcud deyil və ya ona giriş icazəniz yoxdur.
-          </Typography>
-        </Paper>
-      </Container>
-    );
-  }
+  const handleLoadMore = () => {
+    setVisibleMovieCount(prevCount => prevCount + 3);
+  };
+
+  // Kullanıcı profil gösterimi
+  const renderProfile = () => {
+    if (!profile) return null;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
       <Grid container spacing={3}>
-        {/* Sol Panel - Profil Bilgileri */}
         <Grid item xs={12} md={4}>
           <Paper 
-            elevation={3} 
+            elevation={0}
             sx={{ 
               p: 3, 
-              borderRadius: 3,
-              background: darkMode 
-                ? alpha(materialTheme.palette.background.paper, 0.8)
-                : alpha(materialTheme.palette.background.paper, 0.7),
-              backdropFilter: 'blur(10px)'
+              borderRadius: 2,
+              bgcolor: darkMode ? alpha(materialTheme.palette.background.paper, 0.6) : materialTheme.palette.background.paper,
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
             }}
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Badge
-                overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                badgeContent={
-                  <Box
-                    sx={{
-                      width: 16, 
-                      height: 16, 
-                      borderRadius: '50%',
-                      bgcolor: profile.isOnline ? 'success.main' : 'error.main',
-                      border: `2px solid ${materialTheme.palette.background.paper}`,
-                      animation: profile.isOnline 
-                        ? `${pulseAnimation} 2s infinite` 
-                        : `${pulseAnimationRed} 2s infinite`
-                    }}
-                  />
-                }
-              >
-                <Avatar
+              <Box sx={{ position: 'relative', mb: 2 }}>
+                <StatusAvatar
                   src={profile.avatar || undefined}
+                  alt={profile.username}
+                  isOnline={isUserOnline(profile.id)}
+                  size={120}
                   sx={{
-                    width: 120,
-                    height: 120,
-                    mb: 2,
-                    bgcolor: materialTheme.palette.primary.main,
-                    boxShadow: `0 0 0 4px ${alpha(materialTheme.palette.primary.main, 0.2)}`
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    border: `4px solid ${materialTheme.palette.background.paper}`,
                   }}
-                >
-                  {!profile.avatar && <Person sx={{ fontSize: 60 }} />}
-                </Avatar>
-              </Badge>
+                />
+              </Box>
               
-              <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ 
-                mt: 1,
-                background: darkMode 
-                  ? 'linear-gradient(45deg, #bb86fc 30%, #9c27b0 90%)' 
-                  : 'linear-gradient(45deg, #3f51b5 30%, #9c27b0 90%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0px 2px 4px rgba(0,0,0,0.1)',
-                fontSize: '1.6rem',
-                letterSpacing: '0.5px'
-              }}>
+              <Typography variant="h5" fontWeight="bold" gutterBottom>
                 {profile.username}
-                <Box 
-                  component="span" 
-                  sx={{ 
-                    display: 'inline-block',
-                    ml: 1,
-                    color: profile.isOnline ? 'success.main' : 'text.secondary',
-                    fontSize: '0.8rem',
-                    fontWeight: 'normal',
-                    WebkitTextFillColor: profile.isOnline ? '#4caf50' : '#9e9e9e',
-                  }}
-                >
-                  ({profile.isOnline ? 'online' : 'offline'})
-                </Box>
               </Typography>
               
-              <Typography variant="body2" color="text.secondary" sx={{ 
-                mb: 1, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 0.5,
-                backdropFilter: 'blur(4px)',
-                px: 1.5,
-                py: 0.5,
-                borderRadius: 1,
-                bgcolor: alpha(materialTheme.palette.background.default, 0.3),
-              }}>
-                <CalendarMonth fontSize="small" />
-                {formatDate(profile.createdAt)} tarixində qoşulub
-              </Typography>
+              <Chip 
+                label={`Üzv: ${formatDate(profile.createdAt)}`}
+                variant="outlined" 
+                size="small"
+                icon={<CalendarMonth fontSize="small" />}
+                        sx={{ 
+                  borderColor: alpha(materialTheme.palette.divider, 0.6),
+                          mb: 2, 
+                  px: 1
+                }}
+              />
+              
+              {isLoggedIn && profile.id !== loggedInUserId && (
+                <Box sx={{ width: '100%', mt: 2 }}>
+                  {renderFriendshipButtons()}
+                  </Box>
+              )}
+              
+              <Divider sx={{ width: '100%', my: 3 }} />
+              
+              <Stack spacing={2} width="100%">
+                <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
+                  Film Statistikaları
+                </Typography>
+                
+                {/* Film istatistikleri */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {profile.stats.total || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Ümumi
+                    </Typography>
+                    </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {profile.stats.watchlist || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      İzləməli
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {profile.stats.watching || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      İzləyirəm
+                    </Typography>
+                    </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {profile.stats.watched || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      İzlədim
+                    </Typography>
+                  </Box>
+                  </Box>
+                </Stack>
             </Box>
-            
-            <Divider sx={{ 
-              my: 3,
-              "&::before, &::after": {
-                borderColor: darkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.2)",
-              },
-            }} />
-            
-            <Typography variant="subtitle1" fontWeight="medium" gutterBottom sx={{
-              position: 'relative',
-              display: 'inline-block',
-              mb: 2,
-              "&:after": {
-                content: '""',
-                position: 'absolute',
-                width: '40%',
-                height: '3px',
-                bottom: '-5px',
-                left: 0,
-                backgroundColor: darkMode ? '#bb86fc' : '#3f51b5',
-                borderRadius: '2px',
-              }
-            }}>
-              Film Statistikaları
-            </Typography>
-            
-            <Stack spacing={2} sx={{ mt: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WatchLaterIcon color="info" />
-                  <Typography variant="body2">İzləmə Siyahısı</Typography>
-                </Box>
-                <Chip 
-                  label={profile.stats.watchlist} 
-                  size="small" 
-                  color="info" 
-                  variant="outlined" 
-                />
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <VisibilityIcon color="warning" />
-                  <Typography variant="body2">İzlənilir</Typography>
-                </Box>
-                <Chip 
-                  label={profile.stats.watching} 
-                  size="small" 
-                  color="warning" 
-                  variant="outlined" 
-                />
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircleIcon color="success" />
-                  <Typography variant="body2">İzlənildi</Typography>
-                </Box>
-                <Chip 
-                  label={profile.stats.watched} 
-                  size="small" 
-                  color="success" 
-                  variant="outlined" 
-                />
-              </Box>
-              
-              <Divider />
-              
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MovieIcon color="secondary" />
-                  <Typography variant="body1" fontWeight="bold">Ümumi</Typography>
-                </Box>
-                <Chip 
-                  label={profile.stats.total} 
-                  size="small" 
-                  color="secondary" 
-                  sx={{ fontWeight: 'bold' }}
-                />
-              </Box>
-            </Stack>
           </Paper>
         </Grid>
         
@@ -483,7 +554,7 @@ const UserProfilePage: React.FC = () => {
             </Paper>
           )}
           
-          {/* En Yüksek Puanlı Filmler */}
+          {/* En Yüksek Puanlı Filmler -> İzleyicinin film zevki */}
           {profile.topRatedMovies && profile.topRatedMovies.length > 0 && (
             <Paper 
               elevation={3} 
@@ -497,10 +568,13 @@ const UserProfilePage: React.FC = () => {
                 backdropFilter: 'blur(10px)'
               }}
             >
-              <Typography variant="h6" gutterBottom sx={{
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <Typography variant="h6" sx={{
                 position: 'relative',
                 display: 'inline-block',
-                mb: 2,
+                mb: { xs: 2, sm: 0 },
+                textAlign: 'left',
+                width: { xs: '100%', sm: 'auto' },
                 "&:after": {
                   content: '""',
                   position: 'absolute',
@@ -512,11 +586,67 @@ const UserProfilePage: React.FC = () => {
                   borderRadius: '2px',
                 }
               }}>
-                Ən Yüksək Qiymətləndirilmiş Filmlər
+                  İstifadəçinin film siyahısı
               </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
+                  <Tooltip title="Filtr">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<FilterListIcon />}
+                      onClick={handleFilterClick}
+                      sx={{ 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        borderColor: alpha(materialTheme.palette.primary.main, 0.5)
+                      }}
+                    >
+                      {getFilterLabel(currentFilter)}
+                    </Button>
+                  </Tooltip>
+                  
+                  <Menu
+                    anchorEl={filterAnchorEl}
+                    open={Boolean(filterAnchorEl)}
+                    onClose={() => handleFilterClose()}
+                  >
+                    <MenuItem onClick={() => handleFilterClose('all')}>Bütün Filmlər</MenuItem>
+                    <MenuItem onClick={() => handleFilterClose('watchlist')}>İzləməli</MenuItem>
+                    <MenuItem onClick={() => handleFilterClose('watching')}>İzləyirəm</MenuItem>
+                    <MenuItem onClick={() => handleFilterClose('watched')}>İzlədim</MenuItem>
+                  </Menu>
+                  
+                  <Tooltip title="Sıralama">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<SortIcon />}
+                      onClick={handleSortClick}
+                      sx={{ 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        borderColor: alpha(materialTheme.palette.primary.main, 0.5)
+                      }}
+                    >
+                      {getSortLabel(currentSort)}
+                    </Button>
+                  </Tooltip>
+                  
+                  <Menu
+                    anchorEl={sortAnchorEl}
+                    open={Boolean(sortAnchorEl)}
+                    onClose={() => handleSortClose()}
+                  >
+                    <MenuItem onClick={() => handleSortClose('rating')}>İstifadəçi Xalı</MenuItem>
+                    <MenuItem onClick={() => handleSortClose('imdb')}>IMDb Xalı</MenuItem>
+                    <MenuItem onClick={() => handleSortClose('date')}>Tarix</MenuItem>
+                  </Menu>
+                </Box>
+              </Box>
               
               <Grid container spacing={2}>
-                {profile.topRatedMovies.map((movie, index) => (
+                {getSortedMovies().slice(0, visibleMovieCount).map((movie, index) => (
                   <Grid item xs={12} sm={6} key={index}>
                     <Card 
                       sx={{ 
@@ -592,6 +722,34 @@ const UserProfilePage: React.FC = () => {
                   </Grid>
                 ))}
               </Grid>
+              
+              {getSortedMovies().length === 0 && (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">
+                    {currentFilter === 'all' 
+                      ? 'İstifadəçi film əlavə etməyib.' 
+                      : `İstifadəçinin "${getFilterLabel(currentFilter)}" statusunda filmi yoxdur.`}
+                  </Typography>
+                </Box>
+              )}
+              
+              {getSortedMovies().length > visibleMovieCount && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleLoadMore}
+                    size="small"
+                    sx={{ 
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      px: 3
+                    }}
+                  >
+                    Daha çox
+                  </Button>
+                </Box>
+              )}
             </Paper>
           )}
           
@@ -644,7 +802,7 @@ const UserProfilePage: React.FC = () => {
                       İzləmə Cədvəli
                     </Typography>
                     <Typography variant="body2">
-                      İstifadəçinin film və seriallar üçün izləmə cədvəlini görə biləcəksiniz.
+                      İstifadəçinin sosial film platforması üçün izləmə cədvəlini görə biləcəksiniz.
                     </Typography>
                   </CardContent>
                 </Card>
@@ -653,6 +811,93 @@ const UserProfilePage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Skeleton variant="circular" width={120} height={120} sx={{ mb: 2 }} />
+                <Skeleton variant="text" width="60%" height={36} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="40%" height={24} sx={{ mb: 2 }} />
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Skeleton variant="rectangular" height={120} />
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mb: 3 }}>
+              <Skeleton variant="text" width="40%" height={36} sx={{ mb: 2 }} />
+              <Skeleton variant="rectangular" height={100} />
+            </Paper>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 3 }}>
+              <Skeleton variant="text" width="60%" height={36} sx={{ mb: 2 }} />
+              <Skeleton variant="rectangular" height={240} />
+          </Paper>
+        </Grid>
+      </Grid>
+      </Container>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4, 
+            borderRadius: 3, 
+            textAlign: 'center',
+            bgcolor: alpha(materialTheme.palette.error.light, 0.1)
+          }}
+        >
+          <Typography variant="h5" color="error" gutterBottom>
+            {error || 'İstifadəçi profili tapılmadı'}
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            Axtardığınız istifadəçi mövcud deyil və ya ona giriş icazəniz yoxdur.
+          </Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Paper 
+          sx={{ 
+            p: 4, 
+            textAlign: 'center',
+            borderRadius: 2,
+            bgcolor: darkMode ? alpha(materialTheme.palette.background.paper, 0.6) : materialTheme.palette.background.paper,
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+          }}
+        >
+          <Typography variant="h6" color="error" gutterBottom>
+            {error}
+          </Typography>
+          <Button 
+            variant="outlined" 
+            onClick={() => navigate(-1)}
+            sx={{ mt: 2 }}
+          >
+            Geri qayıt
+          </Button>
+        </Paper>
+      ) : (
+        renderProfile()
+      )}
     </Container>
   );
 };

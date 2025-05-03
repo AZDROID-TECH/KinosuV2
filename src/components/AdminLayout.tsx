@@ -18,6 +18,7 @@ import {
 import PeopleIcon from '@mui/icons-material/People';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CommentIcon from '@mui/icons-material/Comment';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 import AdminHeader from './Admin/AdminHeader';
 
 const drawerWidth = 240;
@@ -40,6 +41,7 @@ const AdminLayout = () => {
     { text: 'Ümumi', icon: <DashboardIcon />, path: '/admin' },
     { text: 'İstifadəçilər', icon: <PeopleIcon />, path: '/admin/users' },
     { text: 'Şərhlər', icon: <CommentIcon />, path: '/admin/comments' },
+    { text: 'Yeniliklər', icon: <NewspaperIcon />, path: '/admin/newsletters' },
   ];
 
   const drawerContent = (

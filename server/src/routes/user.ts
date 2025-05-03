@@ -1,9 +1,10 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { getProfile, uploadAvatar, deleteAvatar, getAllUsers, setUserAdminStatus, updateUser, deleteUser, getPublicProfile, changePassword } from '../controllers/userController';
+import { getProfile, uploadAvatar, deleteAvatar, getAllUsers, setUserAdminStatus, updateUser, deleteUser, getPublicProfile, changePassword, searchUsers } from '../controllers/userController';
 import { authenticateToken } from '../middleware/auth';
 import { adminAuth } from '../middleware/adminAuth';
+import { getUserOnlineStatus } from '../controllers/onlineStatusController';
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ const upload = multer({
     }
   }
 });
+
+// Kullanıcı arama
+router.get('/search', authenticateToken, searchUsers);
 
 // Profil bilgilerini getir
 router.get('/profile', authenticateToken, getProfile);
@@ -56,5 +60,12 @@ router.put('/:userId', authenticateToken, adminAuth, updateUser);
 
 // İstifadəçini sil (Admin Yetkisi Lazımdır)
 router.delete('/:userId', authenticateToken, adminAuth, deleteUser);
+
+// Film listeleri
+// Şimdilik bu endpoint'i yorum satırına alıyoruz çünkü addToWatchlist fonksiyonu henüz yok
+// router.post('/watchlist', authenticateToken, addToWatchlist);
+
+// Online durum
+router.get('/online-status/:userId', getUserOnlineStatus);
 
 export default router; 

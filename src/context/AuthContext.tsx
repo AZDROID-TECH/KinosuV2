@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI, userAPI } from '../services/api';
+import { showSuccessToast } from '../utils/toastHelper';
 
 // userAPI.getProfile() çağrısının beklenen dönüş tipi
 // (id alanını içerdiğinden emin olmalıyız)
@@ -101,14 +102,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsAdmin(profile.isAdmin || false);
     } catch (error) {
       console.error('Profil məlumatlarını yükləmə xətası:', error);
-      // Hata durumunda kullanıcı bilgilerini temizle
+      // Hata durumunda kullanıcı bilgilerini temizle ve logout yap
       setUserId(null);
       setUsername(null);
       setEmail(null);
       setAvatar(null);
       setIsAdmin(false);
-      // İsteğe bağlı: Token geçersizse logout yapabiliriz
-      // logout();
+      // Token geçersiz olduğunda otomatik olarak logout yapıyoruz
+      localStorage.removeItem('token');
+      setIsLoggedIn(false);
+      navigate('/login'); 
     }
   };
 
@@ -136,6 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       await refreshProfile(); // Giriş sonrası ID ve diğer bilgileri hemen yükle
+      showSuccessToast('Uğurla daxil oldunuz!');
     } catch (error) {
       // Hata durumunda belki kullanıcıya bilgi verilebilir
       console.error("Login sonrası profil yükleme hatası:", error);

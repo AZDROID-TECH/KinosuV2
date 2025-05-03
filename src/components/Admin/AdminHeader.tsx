@@ -15,7 +15,10 @@ import {
 import MenuIcon from '@mui/icons-material/Menu'; // Gələcəkdə mobil menyu üçün?
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { useAuth } from '../../context/AuthContext'; // Auth contextini istifadə et
+import { useTheme as useAppTheme } from '../../context/ThemeContext'; // ThemeContext'i əlavə et
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
 // Path-lərə uyğun başlıqları təyin edək
@@ -34,6 +37,7 @@ interface AdminHeaderProps {
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
     const { username, avatar, logout } = useAuth();
     const theme = useTheme();
+    const { darkMode, toggleDarkMode } = useAppTheme(); // ThemeContext'dən gələn funksiyaları əlavə et
     const location = useLocation(); // <-- Location hook
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -97,6 +101,24 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Tema dəyişdirmə düyməsi */}
+                    <Tooltip title={darkMode ? "Açıq temaya keç" : "Qaranlıq temaya keç"}>
+                        <IconButton
+                            onClick={toggleDarkMode}
+                            sx={{
+                                mr: 2,
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                '&:hover': {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                },
+                                transition: 'all 0.2s ease-in-out',
+                                borderRadius: 1.5
+                            }}
+                        >
+                            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
+                    </Tooltip>
+                    
                     <Typography 
                       variant="body1"
                       sx={{ 

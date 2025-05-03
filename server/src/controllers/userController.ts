@@ -665,14 +665,15 @@ export const getPublicProfile = async (req: Request, res: Response) => {
       console.error('Son film sorğu xətası:', latestMovieError);
     }
     
-    // Kullanıcının en yüksek puan verdiği 5 filmi getir
+    // Kullanıcının film listesini getir (daha önce sadece en yüksek puan verilmiş filmler)
     const { data: topRatedMovies, error: topRatedError } = await client
       .from(TABLES.MOVIES)
       .select('title, poster, imdb_rating, user_rating, status, created_at')
       .eq('user_id', userProfileId)
-      .gt('user_rating', 0) // Sadece puan verilmiş filmler
-      .order('user_rating', { ascending: false }) // En yüksek puandan en düşüğe
-      .limit(5);
+      // Sadece puanlı filmleri değil, tüm film durumlarını getir
+      // .gt('user_rating', 0) // Bu filtre kaldırıldı
+      .order('user_rating', { ascending: false }) // Öncelikle puana göre sırala
+      .limit(10); // Daha fazla film gösterilebilmesi için 10 film getir
     
     if (topRatedError) {
       console.error('En yüksək reytingli filmlər sorğu xətası:', topRatedError);
@@ -698,5 +699,46 @@ export const getPublicProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Açıq profil məlumatları alınarkən xəta:', error);
     res.status(500).json({ error: 'Profil məlumatları alınarkən xəta baş verdi' });
+  }
+};
+
+// Kullanıcı arama
+export const searchUsers = async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    const userId = req.user?.userId; // Mevcut oturum açmış kullanıcı
+
+    if (!q || typeof q !== 'string') {
+      return res.status(400).json({ error: 'Axtarış sorğusu tələb olunur' });
+    }
+
+    const searchQuery = q.trim();
+    
+    if (searchQuery.length < 2) {
+      return res.status(400).json({ error: 'Axtarış sorğusu ən azı 2 simvol olmalıdır' });
+    }
+
+    const client = getClient();
+    
+    // İLIKE operatörü kullanarak büyük/küçük harf duyarsız arama
+    const { data: users, error } = await client
+      .from(TABLES.USERS)
+      .select('id, username, avatar_url')
+      .ilike('username', `%${searchQuery}%`)
+      .order('username', { ascending: true })
+      .limit(20);
+    
+    if (error) {
+      console.error('İstifadəçi axtarışında xəta:', error);
+      return res.status(500).json({ error: 'İstifadəçilər axtarılarkən xəta baş verdi' });
+    }
+    
+    // Kendini sonuçlardan çıkar
+    const filteredUsers = users.filter(user => user.id !== userId);
+    
+    return res.status(200).json(filteredUsers);
+  } catch (error) {
+    console.error('İstifadəçi axtarışında xəta:', error);
+    return res.status(500).json({ error: 'İstifadəçilər axtarılarkən xəta baş verdi' });
   }
 }; 

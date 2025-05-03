@@ -211,7 +211,7 @@ const Register = () => {
                   fontSize: { xs: '0.85rem', sm: '0.875rem' }
                 }}
               >
-                Film dünyasına qoşulmaq üçün Kinosu hesabı yaradın
+                Sosial Film Platformasına qoşulmaq üçün Kinosu hesabı yaradın
               </Typography>
             </Box>
           </Box>
