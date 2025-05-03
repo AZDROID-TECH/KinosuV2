@@ -157,7 +157,7 @@ server.listen(PORT, () => {
     const pingInterval = setInterval(async () => {
       try {
         await axios.get(targetUrl);
-        // Başarılı ping sessizce devam et
+        console.log("1 DAKİKADA PİNG ATILDI");
       } catch (error) {
         // Bağlantı hatası sonrası yeniden deneme (opsiyonel)
         setTimeout(async () => {

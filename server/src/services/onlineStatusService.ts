@@ -38,13 +38,32 @@ export const initializeSocketServer = (server: HttpServer) => {
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     // Kullanıcı verileri yoksa hata günlüğü
     if (!socket.data.user) {
       return;
     }
     
     const { userId } = socket.data.user;
+    
+    // Kullanıcı bağlandığında otomatik olarak online olarak işaretle
+    onlineUserMap.set(userId, { 
+      socketId: socket.id,
+      lastSeen: new Date()
+    });
+    
+    // Veritabanında kullanıcının son görülme zamanını güncelle
+    try {
+      await getClient()
+        .from('users')
+        .update({ last_seen: new Date().toISOString() })
+        .eq('id', userId);
+    } catch (error) {
+      console.error('Son görülme zamanı güncellenemedi:', error);
+    }
+    
+    // Tüm bağlı istemcilere çevrimiçi kullanıcıları gönder
+    io.emit('users:online', Array.from(onlineUserMap.keys()));
     
     // Kullanıcı bağlandı - socket.id ile ilişkilendir
     socket.on('user:online', async (data) => {

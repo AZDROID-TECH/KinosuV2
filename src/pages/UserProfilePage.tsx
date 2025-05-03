@@ -115,7 +115,7 @@ const UserProfilePage: React.FC = () => {
   const { darkMode } = useCustomTheme();
   const { isLoggedIn, userId: loggedInUserId } = useAuth();
   const { checkFriendshipStatus, sendFriendRequest, removeFriend } = useFriends();
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline, lastSeen, formatLastSeen } = useOnlineStatus();
   
   const [profile, setProfile] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -398,17 +398,46 @@ const UserProfilePage: React.FC = () => {
                 {profile.username}
               </Typography>
               
-              <Chip 
-                label={`Üzv: ${formatDate(profile.createdAt)}`}
-                variant="outlined" 
-                size="small"
-                icon={<CalendarMonth fontSize="small" />}
-                        sx={{ 
-                  borderColor: alpha(materialTheme.palette.divider, 0.6),
-                          mb: 2, 
-                  px: 1
-                }}
-              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
+                {isUserOnline(profile.id) ? (
+                  <Chip 
+                    label="İndi onlayn"
+                    color="success"
+                    size="small"
+                    sx={{ 
+                      fontWeight: 500,
+                      height: 24,
+                      px: 1,
+                      '& .MuiChip-label': { px: 1 },
+                      animation: `${pulseAnimation} 2s infinite`
+                    }}
+                  />
+                ) : (
+                  <Chip 
+                    label={`${formatLastSeen(lastSeen(profile.id))} aktiv idi`}
+                    color="default"
+                    size="small"
+                    sx={{ 
+                      fontWeight: 500,
+                      height: 24,
+                      px: 1,
+                      color: 'text.secondary',
+                      '& .MuiChip-label': { px: 1 }
+                    }}
+                  />
+                )}
+              
+                <Chip 
+                  label={`Üzv: ${formatDate(profile.createdAt)}`}
+                  variant="outlined" 
+                  size="small"
+                  icon={<CalendarMonth fontSize="small" />}
+                  sx={{ 
+                    borderColor: alpha(materialTheme.palette.divider, 0.6),
+                    px: 1
+                  }}
+                />
+              </Box>
               
               {isLoggedIn && profile.id !== loggedInUserId && (
                 <Box sx={{ width: '100%', mt: 2 }}>

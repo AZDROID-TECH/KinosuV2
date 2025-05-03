@@ -18,6 +18,7 @@ interface OnlineStatusContextType {
   onlineUsers: number[];
   isUserOnline: (userId: number) => boolean;
   lastSeen: (userId: number) => Date | null;
+  formatLastSeen: (date: Date | null) => string;
 }
 
 const OnlineStatusContext = createContext<OnlineStatusContextType | undefined>(undefined);
@@ -124,8 +125,37 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
     return userLastSeen[userId] || null;
   };
 
+  // Son görülme zamanını formatlı şekilde göster
+  const formatLastSeen = (date: Date | null): string => {
+    if (!date) return "Bilinmir";
+    
+    // Şimdi ile farkını hesapla
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
+    
+    if (diffMinutes < 1) {
+      return "Az öncə";
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} dəqiqə əvvəl`;
+    } else if (diffMinutes < 60 * 24) {
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours} saat əvvəl`;
+    } else if (diffMinutes < 60 * 24 * 7) {
+      const days = Math.floor(diffMinutes / (60 * 24));
+      return `${days} gün əvvəl`;
+    } else {
+      return date.toLocaleDateString('az-AZ', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  };
+
   return (
-    <OnlineStatusContext.Provider value={{ onlineUsers, isUserOnline, lastSeen }}>
+    <OnlineStatusContext.Provider value={{ onlineUsers, isUserOnline, lastSeen, formatLastSeen }}>
       {children}
     </OnlineStatusContext.Provider>
   );
