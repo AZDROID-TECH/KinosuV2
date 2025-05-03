@@ -7,10 +7,10 @@ import { getClient } from '../utils/supabase';
 const onlineUserMap = new Map<number, { socketId: string, lastSeen: Date }>();
 
 export const initializeSocketServer = (server: HttpServer) => {
-  // Geliştirici ortamı veya üretim ortamı için origin ayarları
+  // CORS için origin ayarı - üretim ortamında '*' kullanarak tüm originlere izin ver
   const allowedOrigins = process.env.NODE_ENV === 'development'
     ? ['http://localhost:3000', 'http://localhost:5000']
-    : true; // Üretim ortamında tüm originlere izin ver (CORS middleware zaten kontrol ediyor)
+    : '*'; // Üretim ortamında wildcard kullanarak tüm originlere izin ver
     
   console.log(`Socket.io sunucusu başlatılıyor. Ortam: ${process.env.NODE_ENV}, Origins:`, allowedOrigins);
 
@@ -37,7 +37,7 @@ export const initializeSocketServer = (server: HttpServer) => {
 
   // JWT token doğrulama aracı (socket middleware)
   io.use(async (socket, next) => {
-    console.log(`Yeni socket bağlantısı istendi: ${socket.id}, headers:`, socket.handshake.headers);
+    console.log(`Yeni socket bağlantısı istendi: ${socket.id}, IP: ${socket.handshake.address}, Origin: ${socket.handshake.headers.origin}`);
     const token = socket.handshake.headers.authorization?.split('Bearer ')[1];
     
     if (!token) {
@@ -88,7 +88,7 @@ export const initializeSocketServer = (server: HttpServer) => {
         
         // Tüm bağlı istemcilere çevrimiçi kullanıcıları gönder
         io.emit('users:online', Array.from(onlineUserMap.keys()));
-        console.log(`Çevrimiçi kullanıcı listesi güncellendi. Toplam: ${onlineUserMap.size}`);
+        console.log(`Çevrimiçi kullanıcı listesi güncellendi. Toplam: ${onlineUserMap.size}, Kullanıcılar: ${Array.from(onlineUserMap.keys()).join(', ')}`);
       } else {
         console.warn(`Kullanıcı ${userId} kimlik doğrulama uyuşmazlığı: ${data.userId} olarak bildirildi`);
       }

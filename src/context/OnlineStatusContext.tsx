@@ -44,15 +44,13 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
 
-    // Bağlantı yapılacak socket.io sunucu adresi
-    // window.location.origin kullanmak yerine protocol ve host bilgilerini kullanarak daha güvenilir bir URL oluştur
-    const baseUrl = process.env.NODE_ENV === 'development'
-      ? 'http://localhost:5000'
-      : `${window.location.protocol}//${window.location.host}`;
+    // Her zaman mevcut sunucuya bağlan (window.location.origin)
+    // Böylece hem geliştirme hem de üretim ortamında aynı host kullanılır
+    const socketUrl = window.location.origin;
     
-    console.log('Socket.io bağlantısı kuruluyor:', baseUrl);
+    console.log('Socket.io bağlantısı kuruluyor:', socketUrl);
     
-    const newSocket = io(baseUrl, {
+    const newSocket = io(socketUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'], // Önce websocket dene, olmuyorsa polling'e düş
       extraHeaders: {
