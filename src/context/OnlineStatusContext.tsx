@@ -44,42 +44,30 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
 
-    // Her zaman mevcut sunucuya bağlan (window.location.origin)
-    // Böylece hem geliştirme hem de üretim ortamında aynı host kullanılır
-    const socketUrl = window.location.origin;
+    // API_URL'i backend server URL'inden al
+    const API_URL = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:5000' 
+      : window.location.origin;
     
-    console.log('Socket.io bağlantısı kuruluyor:', socketUrl);
-    
-    const newSocket = io(socketUrl, {
+    const newSocket = io(API_URL, {
       withCredentials: true,
-      transports: ['websocket', 'polling'], // Önce websocket dene, olmuyorsa polling'e düş
       extraHeaders: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      reconnectionAttempts: 5, // Yeniden bağlanma denemesi sayısı
-      reconnectionDelay: 1000, // Başlangıç gecikmesi (ms)
-      reconnectionDelayMax: 5000, // Maksimum gecikme (ms)
-      timeout: 20000 // Bağlantı zaman aşımı (ms)
+      }
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket.io bağlantısı kuruldu, ID:', newSocket.id);
+      // Konsol log kaldırıldı
       
       // Kullanıcı "online" olduğunu bildir
       newSocket.emit('user:online', { userId });
     });
 
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket.io bağlantı hatası:', error.message);
-    });
-
     newSocket.on('users:online', (users: number[]) => {
-      console.log('Çevrimiçi kullanıcılar güncellendi:', users);
       setOnlineUsers(users);
     });
 
     newSocket.on('user:offline', (data: { userId: number, lastSeen: string }) => {
-      console.log('Kullanıcı çevrimdışı oldu:', data.userId);
       setOnlineUsers(prev => prev.filter(id => id !== data.userId));
       setUserLastSeen(prev => ({
         ...prev,
@@ -87,8 +75,8 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
       }));
     });
 
-    newSocket.on('disconnect', (reason) => {
-      console.log('Socket.io bağlantısı kesildi, sebep:', reason);
+    newSocket.on('disconnect', () => {
+      console.log('Socket.io bağlantısı kesildi');
     });
 
     setSocket(newSocket);
@@ -96,7 +84,6 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
     // Temizleme fonksiyonu
     return () => {
       if (newSocket) {
-        console.log('Socket.io bağlantısı kapatılıyor');
         newSocket.disconnect();
       }
     };
@@ -108,7 +95,6 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('Sayfa görünür, kullanıcı çevrimiçi durumuna geçiyor');
         socket.emit('user:online', { userId });
       }
     };
@@ -117,7 +103,6 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
 
     // Tarayıcıdan ayrılmadan önce "offline" olduğunu bildir
     const handleBeforeUnload = () => {
-      console.log('Sayfa kapatılıyor, kullanıcı çevrimdışı durumuna geçiyor');
       socket.emit('user:offline', { userId });
     };
 

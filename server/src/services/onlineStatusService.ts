@@ -7,47 +7,25 @@ import { getClient } from '../utils/supabase';
 const onlineUserMap = new Map<number, { socketId: string, lastSeen: Date }>();
 
 export const initializeSocketServer = (server: HttpServer) => {
-  // CORS için origin ayarı - üretim ortamında '*' kullanarak tüm originlere izin ver
-  const allowedOrigins = process.env.NODE_ENV === 'development'
-    ? ['http://localhost:3000', 'http://localhost:5000']
-    : '*'; // Üretim ortamında wildcard kullanarak tüm originlere izin ver
-    
-  console.log(`Socket.io sunucusu başlatılıyor. Ortam: ${process.env.NODE_ENV}, Origins:`, allowedOrigins);
-
   const io = new SocketServer(server, {
     cors: {
-      origin: allowedOrigins,
-      methods: ["GET", "POST"],
+      origin: process.env.NODE_ENV === 'development' 
+        ? ['http://localhost:3000', 'http://localhost:5000'] 
+        : true,
       credentials: true
-    },
-    // Eğer proxy arkasında çalışıyorsa, istemcinin IP adresini doğru şekilde almak için
-    transports: ['websocket', 'polling'],
-    // 60 saniye içinde ping-pong olmazsa bağlantı kopar
-    pingTimeout: 60000,
-    // Her 25 saniyede bir ping gönder
-    pingInterval: 25000,
-    // Handshake zaman aşımı - bağlantı kurulurken beklenecek maksimum süre
-    connectTimeout: 45000
-  });
-
-  // Debug bilgilerini logla
-  io.engine.on("connection_error", (err) => {
-    console.error(`Socket.io bağlantı hatası: ${err.message}, kod: ${err.code}, bağlantı: ${err.context}`);
+    }
   });
 
   // JWT token doğrulama aracı (socket middleware)
   io.use(async (socket, next) => {
-    console.log(`Yeni socket bağlantısı istendi: ${socket.id}, IP: ${socket.handshake.address}, Origin: ${socket.handshake.headers.origin}`);
     const token = socket.handshake.headers.authorization?.split('Bearer ')[1];
     
     if (!token) {
-      console.error(`Socket ${socket.id} için kimlik doğrulama başarısız: Token bulunamadı`);
-      return next(new Error('Kimlik doğrulama başarısız oldu: Token bulunamadı'));
+      return next(new Error('Kimlik doğrulama başarısız oldu'));
     }
     
     try {
       const decoded = await verifyToken(token);
-      console.log(`Socket ${socket.id} için token doğrulandı. Kullanıcı: ${decoded.username} (${decoded.id})`);
       
       // socketAuth nesnesine kullanıcı bilgilerini ekle
       socket.data.user = { 
@@ -57,20 +35,17 @@ export const initializeSocketServer = (server: HttpServer) => {
       
       next();
     } catch (error) {
-      console.error(`Socket ${socket.id} için token doğrulama hatası:`, error);
-      next(new Error('Token geçersizdir'));
+      next(new Error('Token etibarsızdır'));
     }
   });
 
   io.on('connection', (socket) => {
-    const { userId, username } = socket.data.user;
-    console.log(`Kullanıcı ${username} (${userId}) socket üzerinden bağlandı. Socket ID: ${socket.id}`);
+    const { userId } = socket.data.user;
     
     // Kullanıcı bağlandı - socket.id ile ilişkilendir
     socket.on('user:online', async (data) => {
       // Kullanıcı kimliğini doğrula
       if (data.userId === userId) {
-        console.log(`Kullanıcı ${username} (${userId}) çevrimiçi durumuna geçti`);
         onlineUserMap.set(userId, { 
           socketId: socket.id,
           lastSeen: new Date()
@@ -83,14 +58,11 @@ export const initializeSocketServer = (server: HttpServer) => {
             .update({ last_seen: new Date().toISOString() })
             .eq('id', userId);
         } catch (error) {
-          console.error(`Kullanıcı ${userId} için son görülme zamanı güncellenemedi:`, error);
+          console.error('Son görülme zamanı güncellenemedi:', error);
         }
         
         // Tüm bağlı istemcilere çevrimiçi kullanıcıları gönder
         io.emit('users:online', Array.from(onlineUserMap.keys()));
-        console.log(`Çevrimiçi kullanıcı listesi güncellendi. Toplam: ${onlineUserMap.size}, Kullanıcılar: ${Array.from(onlineUserMap.keys()).join(', ')}`);
-      } else {
-        console.warn(`Kullanıcı ${userId} kimlik doğrulama uyuşmazlığı: ${data.userId} olarak bildirildi`);
       }
     });
     
@@ -98,7 +70,6 @@ export const initializeSocketServer = (server: HttpServer) => {
     socket.on('user:offline', async (data) => {
       if (data.userId === userId) {
         const lastSeen = new Date();
-        console.log(`Kullanıcı ${username} (${userId}) çevrimdışı durumuna geçti`);
         
         // Map'den kullanıcıyı çıkar
         onlineUserMap.delete(userId);
@@ -110,27 +81,21 @@ export const initializeSocketServer = (server: HttpServer) => {
             .update({ last_seen: lastSeen.toISOString() })
             .eq('id', userId);
         } catch (error) {
-          console.error(`Kullanıcı ${userId} için son görülme zamanı güncellenemedi:`, error);
+          console.error('Son görülme zamanı güncellenemedi:', error);
         }
         
         // Tüm istemcilere kullanıcının çevrimdışı olduğunu bildir
         io.emit('user:offline', { userId, lastSeen: lastSeen.toISOString() });
         io.emit('users:online', Array.from(onlineUserMap.keys()));
-        console.log(`Çevrimiçi kullanıcı listesi güncellendi. Toplam: ${onlineUserMap.size}`);
-      } else {
-        console.warn(`Kullanıcı ${userId} kimlik doğrulama uyuşmazlığı: ${data.userId} olarak bildirildi`);
       }
     });
     
     // Bağlantı kesildi
-    socket.on('disconnect', async (reason) => {
-      console.log(`Socket ${socket.id} için bağlantı kesildi. Sebep: ${reason}`);
-      
+    socket.on('disconnect', async () => {
       // Kullanıcının socket bilgisini kontrol et
       for (const [id, data] of onlineUserMap.entries()) {
         if (data.socketId === socket.id) {
           const lastSeen = new Date();
-          console.log(`Kullanıcı ${id} için bağlantı kesildi, çevrimdışı durumuna geçirildi`);
           
           // Map'den kullanıcıyı çıkar
           onlineUserMap.delete(id);
@@ -142,13 +107,12 @@ export const initializeSocketServer = (server: HttpServer) => {
               .update({ last_seen: lastSeen.toISOString() })
               .eq('id', id);
           } catch (error) {
-            console.error(`Kullanıcı ${id} için son görülme zamanı güncellenemedi:`, error);
+            console.error('Son görülme zamanı güncellenemedi:', error);
           }
           
           // Tüm istemcilere kullanıcının çevrimdışı olduğunu bildir
           io.emit('user:offline', { userId: id, lastSeen: lastSeen.toISOString() });
           io.emit('users:online', Array.from(onlineUserMap.keys()));
-          console.log(`Çevrimiçi kullanıcı listesi güncellendi. Toplam: ${onlineUserMap.size}`);
           break;
         }
       }
@@ -189,7 +153,7 @@ export const getUserLastSeen = async (userId: number): Promise<Date | null> => {
     
     return data.last_seen ? new Date(data.last_seen) : null;
   } catch (error) {
-    console.error(`Kullanıcı ${userId} için son görülme zamanı alınamadı:`, error);
+    console.error('Son görülme zamanı alınamadı:', error);
     return null;
   }
 }; 

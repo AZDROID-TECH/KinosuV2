@@ -344,10 +344,10 @@ const Header = () => {
                     '& .MuiBadge-badge': {
                       fontSize: '0.65rem',
                       fontWeight: 'bold'
-                    }
-                  }}
-                >
-                  <i className='bx bxs-news' style={{ fontSize: '22px' }}></i>
+                  }
+                }}
+              >
+                <i className='bx bxs-news' style={{ fontSize: '22px' }}></i>
                 </Badge>
               </IconButton>
             )}
@@ -907,7 +907,7 @@ const Header = () => {
               background: darkMode 
                 ? 'linear-gradient(45deg, rgba(156, 39, 176, 0.1), rgba(63, 81, 181, 0.1))'
                 : 'linear-gradient(45deg, rgba(92, 107, 192, 0.05), rgba(126, 87, 194, 0.05))',
-              borderBottom: '1px solid',
+                borderBottom: '1px solid', 
               borderColor: darkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.03)',
             }}>
               <Typography variant="subtitle1" 
@@ -921,8 +921,8 @@ const Header = () => {
                 }}
               >
                 <i className='bx bxs-bell' style={{ fontSize: '22px' }}></i>
-                Bildirişlər
-              </Typography>
+              Bildirişlər
+            </Typography>
             </Box>
             
             {incomingRequests.length === 0 ? (
@@ -961,9 +961,9 @@ const Header = () => {
                 
                 {/* İstekler Listesi */}
                 <Box sx={{ maxHeight: '320px', overflow: 'auto' }}>
-                  {incomingRequests.map((request) => (
-                    <Box key={request.id} sx={{ 
-                      borderBottom: '1px solid', 
+                {incomingRequests.map((request) => (
+                  <Box key={request.id} sx={{ 
+                    borderBottom: '1px solid', 
                       borderColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                       transition: 'all 0.2s ease',
                       '&:hover': {
@@ -974,36 +974,36 @@ const Header = () => {
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5 }}>
                         <ListItemAvatar sx={{ minWidth: 'auto', mr: 1.5 }}>
-                          <Avatar 
-                            src={request.sender?.avatar_url || undefined} 
-                            alt={request.sender?.username}
+                        <Avatar 
+                          src={request.sender?.avatar_url || undefined} 
+                          alt={request.sender?.username}
                             sx={{ 
                               width: 42, 
                               height: 42,
                               boxShadow: `0 3px 8px ${alpha(theme.palette.common.black, 0.1)}`,
                               border: `2px solid ${alpha(theme.palette.background.paper, 0.8)}`,
                             }}
-                          >
-                            {!request.sender?.avatar_url && request.sender?.username?.[0].toUpperCase()}
-                          </Avatar>
-                        </ListItemAvatar>
-                        
-                        <Box sx={{ flexGrow: 1, mr: 1, overflow: 'hidden' }}>
-                          <Typography 
-                            variant="body2" 
-                            component={RouterLink} 
-                            to={`/user/${request.sender?.id}`}
-                            sx={{ 
+                        >
+                          {!request.sender?.avatar_url && request.sender?.username?.[0].toUpperCase()}
+                        </Avatar>
+                      </ListItemAvatar>
+                      
+                      <Box sx={{ flexGrow: 1, mr: 1, overflow: 'hidden' }}>
+                        <Typography 
+                          variant="body2" 
+                          component={RouterLink} 
+                          to={`/user/${request.sender?.id}`}
+                          sx={{ 
                               fontWeight: 600, 
                               fontSize: '0.9rem',
                               color: darkMode ? theme.palette.primary.light : theme.palette.primary.main,
-                              textDecoration: 'none',
-                              '&:hover': { textDecoration: 'underline' }
-                            }}
-                            onClick={handleNotificationMenuClose}
-                          >
-                            {request.sender?.username}
-                          </Typography>
+                            textDecoration: 'none',
+                            '&:hover': { textDecoration: 'underline' }
+                          }}
+                          onClick={handleNotificationMenuClose}
+                        >
+                          {request.sender?.username}
+                        </Typography>
                           <Typography 
                             variant="caption" 
                             color="text.secondary" 
@@ -1011,45 +1011,45 @@ const Header = () => {
                             display="block"
                             sx={{ mt: 0.5, fontSize: '0.75rem' }}
                           >
-                            sizə dostluq istəyi göndərib
-                          </Typography>
-                        </Box>
-                        
+                          sizə dostluq istəyi göndərib
+                        </Typography>
+                      </Box>
+                      
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <IconButton 
-                            size="small" 
-                            color="primary" 
-                            onClick={() => handleAcceptRequest(request.id)}
-                            sx={{ 
-                              bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                        <IconButton 
+                          size="small" 
+                          color="primary" 
+                          onClick={() => handleAcceptRequest(request.id)}
+                          sx={{ 
+                            bgcolor: alpha(theme.palette.primary.main, 0.1), 
                               '&:hover': { 
                                 bgcolor: alpha(theme.palette.primary.main, 0.2),
                                 transform: 'scale(1.1)',
                               },
                               transition: 'all 0.2s ease',
-                            }}
-                          >
-                            <i className='bx bx-check' style={{ fontSize: '18px' }}></i>
-                          </IconButton>
-                          <IconButton 
-                            size="small" 
-                            color="error" 
-                            onClick={() => handleRejectRequest(request.id)}
-                            sx={{ 
-                              bgcolor: alpha(theme.palette.error.main, 0.1),
+                          }}
+                        >
+                          <i className='bx bx-check' style={{ fontSize: '18px' }}></i>
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          color="error" 
+                          onClick={() => handleRejectRequest(request.id)}
+                          sx={{ 
+                            bgcolor: alpha(theme.palette.error.main, 0.1),
                               '&:hover': { 
                                 bgcolor: alpha(theme.palette.error.main, 0.2),
                                 transform: 'scale(1.1)',
                               },
                               transition: 'all 0.2s ease',
-                            }}
-                          >
-                            <i className='bx bx-x' style={{ fontSize: '18px' }}></i>
-                          </IconButton>
-                        </Box>
+                          }}
+                        >
+                          <i className='bx bx-x' style={{ fontSize: '18px' }}></i>
+                        </IconButton>
                       </Box>
                     </Box>
-                  ))}
+                  </Box>
+                ))}
                 </Box>
               </>
             )}
@@ -1066,7 +1066,7 @@ const Header = () => {
                   py: 1.5,
                   color: theme.palette.primary.main,
                   fontWeight: 500,
-                  textAlign: 'center',
+                textAlign: 'center', 
                   '&:hover': {
                     backgroundColor: darkMode 
                       ? alpha(theme.palette.primary.main, 0.1)
