@@ -29,6 +29,7 @@ import { useOnlineStatus } from '../context/OnlineStatusContext';
 import { getLatestNewsletters, getUnreadCount, markNewsletterAsViewed, Newsletter } from '../services/newsletterService';
 import { format } from 'date-fns';
 import { apiClient } from '../services/apiClient';
+import { useHeaderMenu } from '../context/HeaderMenuContext';
 
 // Ortak stiller
 const commonStyles = {
@@ -42,7 +43,7 @@ const Header = () => {
   const { darkMode, toggleDarkMode } = useCustomTheme();
   const { isLoggedIn, username, avatar, logout, isLoadingAuth, isAdmin, userId } = useAuth();
   const { isUserOnline } = useOnlineStatus();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { profileAnchorEl, openProfileMenu, closeProfileMenu, isProfileMenuOpen, menuOrigin } = useHeaderMenu();
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [newsletterAnchorEl, setNewsletterAnchorEl] = useState<null | HTMLElement>(null);
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
@@ -64,16 +65,8 @@ const Header = () => {
     refreshRequestsCount
   } = useFriends();
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = () => {
-    handleMenuClose();
+    closeProfileMenu();
     logout();
   };
 
@@ -191,52 +184,32 @@ const Header = () => {
   const isSimpleHeader = isLoginPage || isRegisterPage || isResetPage;
 
   // Kullanıcı menüsünü açan avatar bileşeni
-  const userAvatar = isLoadingAuth ? (
-    <Skeleton variant="circular" width={40} height={40} />
-  ) : (
-    <Box
+  const userAvatar = (
+    <IconButton
+      size="small"
+      aria-controls="menu-appbar"
+      aria-haspopup="true"
+      onClick={openProfileMenu}
+      color="inherit"
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        cursor: 'pointer',
-        p: 0.5,
-        borderRadius: 2,
         transition: 'all 0.3s ease',
-        ml: { xs: 0, sm: 0.5 },
+        ml: { xs: 0, sm: 1 },
+        p: 0.75,
+        display: { xs: 'none', sm: 'flex' }, // Mobil görünümde gizle, tablet ve üzerinde göster
         '&:hover': {
-          bgcolor: alpha(theme.palette.common.white, 0.15),
-          transform: 'translateY(-2px)',
+          backgroundColor: (theme) => isSimpleHeader 
+            ? alpha(theme.palette.primary.main, 0.08)
+            : 'rgba(255, 255, 255, 0.1)'
         },
       }}
-      onClick={handleMenuOpen}
     >
-      <StatusAvatar
-        src={avatar ? avatar : undefined}
-        alt={username || 'İstifadəçi'}
+      <StatusAvatar 
+        src={avatar ? avatar : undefined} 
+        alt={username || "User"} 
+        size={35}
         isOnline={userId ? isUserOnline(userId) : false}
-        size={37}
-        sx={{
-          boxShadow: '0 3px 6px rgba(0,0,0,0.16)',
-          transition: 'all 0.3s ease',
-          border: `2px solid ${alpha(theme.palette.common.white, 0.7)}`,
-        }}
       />
-      <Typography
-        variant="body1"
-        sx={{
-          display: { xs: 'none', sm: 'block' },
-          fontWeight: 600,
-          fontSize: '1rem',
-          fontFamily: "'Montserrat', sans-serif",
-          letterSpacing: '0.3px',
-          color: isSimpleHeader ? '#fff' : (darkMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.95)'),
-          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-        }}
-      >
-        {username}
-      </Typography>
-    </Box>
+    </IconButton>
   );
 
   return (
@@ -388,14 +361,16 @@ const Header = () => {
             <>
               {userAvatar}
               <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
+                anchorEl={profileAnchorEl}
+                open={isProfileMenuOpen}
+                onClose={closeProfileMenu}
                 PaperProps={{
                   elevation: 5,
                   sx: {
                     minWidth: '220px',
-                    mt: 1.5,
+                    mt: menuOrigin === 'bottom' ? 0 : 1.5,
+                    mb: menuOrigin === 'bottom' ? 2 : 0,
+                    transform: menuOrigin === 'bottom' ? 'translateY(-10px) !important' : 'none',
                     borderRadius: '16px',
                     backdropFilter: 'blur(12px)',
                     backgroundColor: darkMode 
@@ -406,6 +381,7 @@ const Header = () => {
                       : '1px solid rgba(0, 0, 0, 0.08)',
                     overflow: 'hidden',
                     transition: 'all 0.2s ease',
+                    zIndex: 1400,
                     boxShadow: darkMode
                       ? '0 10px 40px rgba(0, 0, 0, 0.35)'
                       : '0 10px 40px rgba(0, 0, 0, 0.15)',
@@ -423,8 +399,15 @@ const Header = () => {
                     }
                   },
                 }}
-                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                transformOrigin={{ 
+                  horizontal: 'right', 
+                  vertical: menuOrigin === 'bottom' ? 'bottom' : 'top' 
+                }}
+                anchorOrigin={{ 
+                  horizontal: 'right', 
+                  vertical: menuOrigin === 'bottom' ? 'top' : 'bottom'
+                }}
+                style={{ zIndex: 1400 }}
               >
                 {/* Kullanıcı Profil Özeti */}
                 <Box sx={{ 
@@ -475,7 +458,7 @@ const Header = () => {
 
                 <MenuItem 
                   onClick={() => {
-                    handleMenuClose();
+                    closeProfileMenu();
                     navigate('/profile');
                   }} 
                   sx={{ 
@@ -511,7 +494,7 @@ const Header = () => {
                 </MenuItem>
                 <MenuItem 
                   onClick={() => {
-                    handleMenuClose();
+                    closeProfileMenu();
                     navigate('/friends');
                   }} 
                   sx={{ 
@@ -565,7 +548,7 @@ const Header = () => {
                   >
                   <MenuItem 
                     onClick={() => {
-                      handleMenuClose();
+                      closeProfileMenu();
                       navigate('/admin');
                     }} 
                     sx={{ 

@@ -1,1 +1,0 @@
-import{$ as r,a0 as a,j as t}from"./index-BpWeeXno.js";var e={},o=r;Object.defineProperty(e,"__esModule",{value:!0});var u=e.default=void 0,s=o(a()),v=t;u=e.default=(0,s.default)((0,v.jsx)("path",{d:"M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"}),"Person");export{u as d};

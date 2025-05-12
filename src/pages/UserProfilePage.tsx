@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -115,7 +115,7 @@ const UserProfilePage: React.FC = () => {
   const { darkMode } = useCustomTheme();
   const { isLoggedIn, userId: loggedInUserId } = useAuth();
   const { checkFriendshipStatus, sendFriendRequest, removeFriend } = useFriends();
-  const { isUserOnline, lastSeen, formatLastSeen } = useOnlineStatus();
+  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useOnlineStatus();
   
   const [profile, setProfile] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,6 +128,7 @@ const UserProfilePage: React.FC = () => {
   const [currentFilter, setCurrentFilter] = useState<string>('all');
   const [currentSort, setCurrentSort] = useState<string>('rating');
   const [visibleMovieCount, setVisibleMovieCount] = useState<number>(6);
+  const [profileLastSeen, setProfileLastSeen] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -176,6 +177,20 @@ const UserProfilePage: React.FC = () => {
     
     checkStatus();
   }, [isLoggedIn, profile, loggedInUserId, checkFriendshipStatus]);
+
+  // Profil yüklendikten sonra, son görülme zamanını bir kez iste
+  useEffect(() => {
+    if (profile && !isUserOnline(profile.id)) {
+      requestUserLastSeen(profile.id);
+    }
+  }, [profile, requestUserLastSeen, isUserOnline]);
+
+  // Son görülme zamanını izle ve state'e kaydet
+  useEffect(() => {
+    if (profile) {
+      setProfileLastSeen(lastSeen(profile.id));
+    }
+  }, [profile, lastSeen]);
 
   const handleSendFriendRequest = async () => {
     if (!profile) return;
@@ -414,7 +429,7 @@ const UserProfilePage: React.FC = () => {
                   />
                 ) : (
                   <Chip 
-                    label={`${formatLastSeen(lastSeen(profile.id))} aktiv idi`}
+                    label={`${formatLastSeen(profileLastSeen)} aktiv idi`}
                     color="default"
                     size="small"
                     sx={{ 

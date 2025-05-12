@@ -342,4 +342,4 @@ export const getWelcomeTemplate = (username: string): string => {
 </body>
 </html>
   `;
-}; 
+};

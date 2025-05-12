@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       await refreshProfile(); // Giriş sonrası ID ve diğer bilgileri hemen yükle
-      showSuccessToast('Uğurla daxil oldunuz!');
+      // showSuccessToast('Uğurla daxil oldunuz!'); // Bu bildirim Login.tsx'e taşındı ve oradan yönetiliyor.
     } catch (error) {
       // Hata durumunda belki kullanıcıya bilgi verilebilir
       console.error("Login sonrası profil yükleme hatası:", error);
@@ -179,4 +179,4 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

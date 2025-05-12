@@ -4,7 +4,6 @@ import {
     Toolbar,
     Typography,
     IconButton,
-    Avatar,
     Menu,
     MenuItem,
     Box,
@@ -20,6 +19,8 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { useAuth } from '../../context/AuthContext'; // Auth contextini istifadə et
 import { useTheme as useAppTheme } from '../../context/ThemeContext'; // ThemeContext'i əlavə et
 import { Link as RouterLink, useLocation } from 'react-router-dom';
+import StatusAvatar from '../Common/StatusAvatar'; // StatusAvatar bileşenini import et
+import { useOnlineStatus } from '../../context/OnlineStatusContext'; // OnlineStatus context'ini import et
 
 // Path-lərə uyğun başlıqları təyin edək
 const pageTitles: Record<string, string> = {
@@ -35,12 +36,13 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
-    const { username, avatar, logout } = useAuth();
+    const { username, avatar, logout, userId } = useAuth();
     const theme = useTheme();
     const { darkMode, toggleDarkMode } = useAppTheme(); // ThemeContext'dən gələn funksiyaları əlavə et
     const location = useLocation(); // <-- Location hook
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
+    const { isUserOnline } = useOnlineStatus(); // OnlineStatus context'inden isUserOnline fonksiyonunu al
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -136,9 +138,12 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
                             onClick={handleMenu}
                             color="inherit"
                         >
-                             <Avatar src={avatar || undefined} sx={{ width: 32, height: 32 }}>
-                                {!avatar && <AccountCircleIcon />}
-                             </Avatar>
+                             <StatusAvatar 
+                                src={avatar || undefined} 
+                                alt={username || 'Admin'} 
+                                size={32}
+                                isOnline={userId ? isUserOnline(userId) : false}
+                             />
                         </IconButton>
                     </Tooltip>
                     <Menu

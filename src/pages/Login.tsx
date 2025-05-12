@@ -45,15 +45,15 @@ const Login = () => {
 
   useEffect(() => {
     // Eğer kullanıcı zaten giriş yapmışsa dashboard'a yönlendir
-    if (isLoggedIn) {
-      navigate('/dashboard');
-    }
+    // if (isLoggedIn) { // Bu yönlendirme AuthContext içinde yapılıyor, burada gereksiz.
+    //   navigate('/dashboard');
+    // }
     
     // Eğer token süresi dolmuşsa bildirim göster
     if (tokenExpired) {
       showErrorToast('Sessiyanız müddəti bitib. Zəhmət olmasa yenidən daxil olun.');
     }
-  }, [isLoggedIn, navigate, tokenExpired]);
+  }, [tokenExpired]); // Bağımlılıklar güncellendi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +65,9 @@ const Login = () => {
 
     try {
       await login(formData.username, formData.password);
+      if (!tokenExpired) {
+        showSuccessToast('Uğurla daxil oldunuz!');
+      }
     } catch (error) {
       console.error('Login error:', error);
       if (typeof error === 'string') {
@@ -107,7 +110,7 @@ const Login = () => {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          py: { xs: 2, sm: 4 },
+          py: { xs: 1, sm: 4 },
           background: isDarkMode 
             ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' 
             : 'linear-gradient(135deg, #e8eaf6 0%, #c5cae9 50%, #9fa8da 100%)',
@@ -160,12 +163,6 @@ const Login = () => {
                 ? '1px solid rgba(255, 255, 255, 0.1)'
                 : '1px solid rgba(255, 255, 255, 0.7)',
               transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
-              '&:hover': {
-                transform: 'translateY(-5px)',
-                boxShadow: isDarkMode
-                  ? '0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15) inset'
-                  : '0 12px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.6) inset',
-              },
             }}
           >
             <Box
@@ -647,4 +644,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

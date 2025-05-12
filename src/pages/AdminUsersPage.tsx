@@ -28,6 +28,7 @@ import {
   Stack,
   Badge
 } from '@mui/material';
+import { Link } from 'react-router-dom';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import RemoveModeratorIcon from '@mui/icons-material/RemoveModerator';
 import PersonIcon from '@mui/icons-material/Person';
@@ -38,6 +39,8 @@ import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 import { formatDate } from '../utils/movieHelpers';
 import UserCommentsModal from '../components/Admin/UserCommentsModal';
+import StatusAvatar from '../components/Common/StatusAvatar';
+import { useOnlineStatus } from '../context/OnlineStatusContext';
 
 interface UserForAdmin {
   id: number;
@@ -211,7 +214,7 @@ const DeleteUserDialog = ({ open, user, onClose, onConfirm, isDeleting }: Delete
  * @desc İstifadəçiləri admin panelində idarə etmək üçün interfeys.
  */
 const AdminUsersPage = () => {
-  const { username: currentAdminUsername } = useAuth(); 
+  const { username: currentAdminUsername, userId: currentUserId } = useAuth(); 
   const theme = useTheme();
   const [users, setUsers] = useState<UserForAdmin[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -231,6 +234,9 @@ const AdminUsersPage = () => {
 
   // Bildiriş mesajı
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { isAdmin } = useAuth();
+  const { isUserOnline } = useOnlineStatus();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -337,18 +343,26 @@ const AdminUsersPage = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
         </Box>
       );
     }
 
     if (error) {
-      return <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>;
+      return (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      );
     }
 
     if (users.length === 0) {
-      return <Alert severity="info" sx={{ mt: 2 }}>Heç bir istifadəçi tapılmadı.</Alert>;
+      return (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          Heç bir istifadəçi tapılmadı.
+        </Alert>
+      );
     }
 
     return (
@@ -375,11 +389,25 @@ const AdminUsersPage = () => {
               >
                 <TableCell component="th" scope="row">{user.id}</TableCell>
                 <TableCell>
-                  <Avatar src={user.avatar_url || undefined} alt={user.username} sx={{ width: 36, height: 36 }}>
-                    {!user.avatar_url && <PersonIcon />}
-                  </Avatar>
+                  <StatusAvatar 
+                    src={user.avatar_url || undefined} 
+                    alt={user.username} 
+                    size={36}
+                    isOnline={isUserOnline(user.id)}
+                  />
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'medium' }}>{user.username}</TableCell>
+                <TableCell sx={{ fontWeight: 'medium' }}>
+                  <Link 
+                    to={`/user/${user.id}`} 
+                    style={{ 
+                      color: 'inherit', 
+                      textDecoration: 'none',
+                      fontWeight: 'inherit'
+                    }}
+                  >
+                    {user.username}
+                  </Link>
+                </TableCell>
                 <TableCell>{user.email || '-'}</TableCell>
                 <TableCell>
                   {user.is_admin ? (
@@ -401,68 +429,60 @@ const AdminUsersPage = () => {
                 </TableCell>
                 <TableCell>{formatDate(user.created_at)}</TableCell>
                 <TableCell align="center">
-                  <Tooltip title={`${user.username} adlı istifadəçinin şərhlərinə bax`}>
-                    <Badge 
-                      badgeContent={user.comment_count || 0} 
-                      color="info" 
-                      invisible={!user.comment_count || user.comment_count === 0}
-                      sx={{ '& .MuiBadge-badge': { fontSize: '0.7rem', height: 16, minWidth: 16 } }}
+                  <Tooltip title="İstifadəçi şərhlərini göstər">
+                    <IconButton 
+                      onClick={() => handleOpenCommentsModal(user)}
+                      color="primary"
+                      size="small"
                     >
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpenCommentsModal(user)}
-                        color="info"
+                      <Badge 
+                        badgeContent={user.comment_count || 0} 
+                        color="primary"
+                        max={99}
                       >
-                        <ChatBubbleOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Badge>
+                        <ChatBubbleOutlineIcon />
+                      </Badge>
+                    </IconButton>
                   </Tooltip>
                 </TableCell>
                 <TableCell align="center">
                   <Stack direction="row" spacing={0.5} justifyContent="center">
-                    <Tooltip title={user.is_admin ? 'Admin Yetkisini Al' : 'Admin Yetkisi Ver'}>
-                      <span>
-                        <IconButton
-                          color={user.is_admin ? 'error' : 'secondary'}
-                          onClick={() => handleAdminStatusChange(user.id, user.is_admin)}
-                          disabled={loading || updatingUserId === user.id || user.username === currentAdminUsername}
-                          size="small"
-                        >
-                          {updatingUserId === user.id ? (
-                            <CircularProgress size={20} color="inherit" />
-                          ) : user.is_admin ? (
-                            <RemoveModeratorIcon />
-                          ) : (
-                            <AdminPanelSettingsIcon />
-                          )}
-                        </IconButton>
-                      </span>
+                    <Tooltip title="İstifadəçini redaktə et">
+                      <IconButton 
+                        onClick={() => handleEditUser(user)}
+                        color="primary"
+                        size="small"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
                     </Tooltip>
                     
-                    <Tooltip title="Düzənlə">
-                      <span>
-                        <IconButton
-                          color="primary"
-                          onClick={() => handleEditUser(user)}
-                          disabled={loading || user.username === currentAdminUsername}
-                          size="small"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </span>
+                    <Tooltip title={user.is_admin ? "Admin statusunu ləğv et" : "Admin təyin et"}>
+                      <IconButton 
+                        onClick={() => handleAdminStatusChange(user.id, user.is_admin)}
+                        color={user.is_admin ? "default" : "secondary"}
+                        size="small"
+                        disabled={updatingUserId === user.id || user.id === currentUserId}
+                      >
+                        {updatingUserId === user.id ? (
+                          <CircularProgress size={20} />
+                        ) : user.is_admin ? (
+                          <RemoveModeratorIcon fontSize="small" />
+                        ) : (
+                          <AdminPanelSettingsIcon fontSize="small" />
+                        )}
+                      </IconButton>
                     </Tooltip>
                     
-                    <Tooltip title="Sil">
-                      <span>
-                        <IconButton
-                          color="error"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={loading || user.username === currentAdminUsername}
-                          size="small"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </span>
+                    <Tooltip title="İstifadəçini sil">
+                      <IconButton 
+                        onClick={() => handleDeleteUser(user)}
+                        color="error"
+                        size="small"
+                        disabled={user.id === currentUserId}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
                     </Tooltip>
                   </Stack>
                 </TableCell>

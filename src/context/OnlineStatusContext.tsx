@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -19,6 +19,7 @@ interface OnlineStatusContextType {
   isUserOnline: (userId: number) => boolean;
   lastSeen: (userId: number) => Date | null;
   formatLastSeen: (date: Date | null) => string;
+  requestUserLastSeen: (userId: number) => Promise<void>;
 }
 
 const OnlineStatusContext = createContext<OnlineStatusContextType | undefined>(undefined);
@@ -39,29 +40,64 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
   const [userLastSeen, setUserLastSeen] = useState<Record<number, Date>>({});
+  const [pendingRequests, setPendingRequests] = useState<Set<number>>(new Set());
   const { isLoggedIn, userId } = useAuth();
+
+  // Son görülme zamanını istemek için fonksiyon
+  const requestUserLastSeen = useCallback(async (targetUserId: number): Promise<void> => {
+    if (!socket || !socket.connected) {
+      console.warn('Socket bağlantısı yok, son görülme zamanı istenemedi');
+      return;
+    }
+
+    // Eğer kullanıcı çevrimiçi ise veya zaten istekte bulunulmuşsa, işlemi atla
+    if (onlineUsers.includes(targetUserId) || pendingRequests.has(targetUserId)) {
+      return;
+    }
+
+    // İstek beklemede olarak işaretle
+    setPendingRequests(prev => new Set([...prev, targetUserId]));
+    
+    // Son görülme zamanını iste
+    socket.emit('user:lastSeen', { userId: targetUserId });
+  }, [socket, onlineUsers, pendingRequests]);
 
   // Socket bağlantısını oluştur ve kullanıcı giriş/çıkış durumlarını izle
   useEffect(() => {
     if (!isLoggedIn || !userId) return;
 
-    // Her zaman mevcut origin'i kullan
-    const API_URL = window.location.origin;
+    // API URL'ını doğru şekilde belirle (geliştirme veya prodüksiyon ortamına göre)
+    let API_URL;
     
+    // Geliştirme ortamında sunucu farklı bir portta çalışabilir
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      // Geliştirme ortamında muhtemelen sunucu 5000 portunda çalışır
+      API_URL = `http://${window.location.hostname}:5000`;
+    } else {
+      // Prodüksiyon ortamında sunucu ve istemci aynı origin'de çalışır
+      API_URL = window.location.origin;
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('Token bulunamadı, socket bağlantısı kurulamıyor');
+      return;
+    }
+    
+    // Auth objesi içerisinde token gönder
     const newSocket = io(API_URL, {
       withCredentials: true,
-      extraHeaders: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
+      auth: { token }
     });
 
     newSocket.on('connect', () => {
+      console.log('Socket bağlantısı başarılı');
       // Kullanıcı "online" olduğunu bildir
       newSocket.emit('user:online', { userId });
     });
 
     newSocket.on('connect_error', (error) => {
-      // Sessizce hataları görmezden gel
+      console.warn('Socket bağlantı hatası:', error.message);
     });
 
     newSocket.on('users:online', (users: number[]) => {
@@ -76,8 +112,32 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
       }));
     });
 
-    newSocket.on('disconnect', () => {
-      // Sessizce bağlantı kesildiğinde devam et
+    // Son görülme zamanı yanıtlarını dinle
+    newSocket.on('user:lastSeenResponse', (data: { userId: number, lastSeen: string | null }) => {
+      if (data.lastSeen) {
+        setUserLastSeen(prev => ({
+          ...prev,
+          [data.userId]: new Date(data.lastSeen)
+        }));
+      }
+      
+      // İsteği tamamlandı olarak işaretle
+      setPendingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(data.userId);
+        return newSet;
+      });
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Socket bağlantısı kesildi:', reason);
+      // Tekrar bağlanma stratejisi
+      if (reason === 'io server disconnect') {
+        // Sunucu bağlantıyı kapattıysa, manuel olarak tekrar bağlan
+        setTimeout(() => {
+          newSocket.connect();
+        }, 1000);
+      }
     });
 
     setSocket(newSocket);
@@ -115,15 +175,42 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
     };
   }, [socket, isLoggedIn, userId]);
 
+  // Kullanıcının çevrimiçi durumunu periyodik olarak kontrol et
+  useEffect(() => {
+    if (!socket || !isLoggedIn) return;
+
+    // Her 5 dakikada bir "hala çevrimiçiyim" sinyali gönder
+    const activityInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        socket.emit('user:online', { userId });
+      }
+    }, 4 * 60 * 1000); // 4 dakika - server side 5 dakika timer'ından kısa olmalı
+
+    return () => {
+      clearInterval(activityInterval);
+    };
+  }, [socket, isLoggedIn, userId]);
+
   // Kullanıcının online olup olmadığını kontrol et
   const isUserOnline = (userId: number): boolean => {
     return onlineUsers.includes(userId);
   };
 
   // Kullanıcının son görülme zamanını al
-  const lastSeen = (userId: number): Date | null => {
+  const lastSeen = useCallback((userId: number): Date | null => {
+    // Eğer kullanıcı çevrimiçi ise null dön (çevrimiçi olduğu gösterilecek)
+    if (isUserOnline(userId)) {
+      return null;
+    }
+    
+    // Eğer son görülme zamanı önbelleğimizde yoksa ve henüz istenmemişse, iste
+    if (!userLastSeen[userId] && !pendingRequests.has(userId)) {
+      requestUserLastSeen(userId);
+      return null; // İstek tamamlanana kadar null dön
+    }
+    
     return userLastSeen[userId] || null;
-  };
+  }, [userLastSeen, onlineUsers, pendingRequests, requestUserLastSeen]);
 
   // Son görülme zamanını formatlı şekilde göster
   const formatLastSeen = (date: Date | null): string => {
@@ -155,7 +242,13 @@ export const OnlineStatusProvider: React.FC<OnlineStatusProviderProps> = ({ chil
   };
 
   return (
-    <OnlineStatusContext.Provider value={{ onlineUsers, isUserOnline, lastSeen, formatLastSeen }}>
+    <OnlineStatusContext.Provider value={{ 
+      onlineUsers, 
+      isUserOnline, 
+      lastSeen, 
+      formatLastSeen, 
+      requestUserLastSeen 
+    }}>
       {children}
     </OnlineStatusContext.Provider>
   );

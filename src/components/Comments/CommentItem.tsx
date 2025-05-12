@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Avatar, IconButton, Link, Menu, MenuItem, CircularProgress, useTheme, Tooltip, Button } from '@mui/material';
+import { Box, Typography, IconButton, Link, Menu, MenuItem, CircularProgress, useTheme, Tooltip, Button } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ThumbUp, ThumbUpOutlined, ThumbDown, ThumbDownOutlined, Reply, DeleteOutline, MoreVert, Edit } from '@mui/icons-material';
 import { Comment, voteComment, deleteComment } from '../../services/commentService';
@@ -10,6 +10,8 @@ import { showSuccessToast, showErrorToast, showInfoToast } from '../../utils/toa
 import styles from './Comments.module.css';
 import CommentForm from './CommentForm'; // Yanıt formu için
 import ConfirmationDialog from '../Common/ConfirmationDialog'; // <-- Yeni Dialog import edildi
+import StatusAvatar from '../Common/StatusAvatar'; // StatusAvatar bileşenini import ediyoruz
+import { useOnlineStatus } from '../../context/OnlineStatusContext'; // OnlineStatus context'ini import et
 
 interface CommentItemProps {
     comment: Comment;
@@ -28,6 +30,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, movieId, onVoteChang
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false); // <-- Dialog state'i
+    const { isUserOnline } = useOnlineStatus(); // OnlineStatus context'inden isUserOnline fonksiyonunu al
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -48,6 +51,17 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, movieId, onVoteChang
 
     // Kullanıcının kendi yorumu olup olmadığını kontrol et
     const isOwnComment = loggedInUserId !== null && loggedInUserId === comment.user_id;
+
+    // Yorum sahibinin çevrimiçi durumunu kontrol et
+    // Kendi yorumları için direkt olarak loggedInUserId'yi kullan
+    const isAuthorOnline = () => {
+        if (isOwnComment && loggedInUserId) {
+            return isUserOnline(loggedInUserId); // Kendi yorumu için kendi çevrimiçi durumunu kullan
+        } else if (comment.author?.id) {
+            return isUserOnline(comment.author.id); // Başkasının yorumu için onun çevrimiçi durumunu kullan
+        }
+        return false;
+    };
 
     const handleVote = async (voteType: 'like' | 'dislike') => {
         // Giriş yapılmadıysa, işlem sürüyorsa veya kendi yorumuysa oy verme
@@ -143,12 +157,13 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, movieId, onVoteChang
                 position: 'relative', // Menü konumu için
             }}
         >
-            <Avatar 
+            <StatusAvatar 
                 component={RouterLink} 
                 to={`/user/username/${comment.author?.username}`}
                 src={comment.author?.avatar_url || ''} 
                 alt={comment.author?.username || 'Anonim'} 
-                sx={{ width: 36, height: 36, mt: 0.5 }}
+                isOnline={isAuthorOnline()}
+                size={36}
             />
             <Box sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>

@@ -1,4 +1,4 @@
-import { Box, Container, Typography, Divider, useTheme, alpha } from '@mui/material';
+import { Box, Container, Typography, Divider, useTheme, alpha, useMediaQuery } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import 'boxicons/css/boxicons.min.css';
@@ -20,6 +20,7 @@ const Footer = () => {
   const location = useLocation();
   const theme = useTheme();
   const { darkMode } = useCustomTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // Giriş ve kayıt sayfalarında farklı stil için kontrol
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname.includes('/reset-password');
@@ -31,6 +32,7 @@ const Footer = () => {
         py: isAuthPage ? { xs: 2, sm: 3 } : 3,
         px: 2,
         mt: 'auto',
+        mb: { xs: '70px', sm: 0 }, // Mobil cihazlarda alt menü için boşluk
         background: darkMode 
           ? alpha(theme.palette.background.paper, 0.95)
           : 'linear-gradient(45deg, #3f51b5 0%, #673ab7 100%)',

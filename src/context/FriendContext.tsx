@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import { apiClient } from '../services/apiClient';
@@ -87,7 +87,7 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
   const [requestsCount, setRequestsCount] = useState<number>(0);
 
   // Arkadaş listesini yenile
-  const refreshFriends = async () => {
+  const refreshFriends = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -100,10 +100,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isLoggedIn]);
 
   // Gelen istekleri yenile
-  const refreshIncomingRequests = async () => {
+  const refreshIncomingRequests = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -116,10 +116,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isLoggedIn]);
 
   // Giden istekleri yenile
-  const refreshOutgoingRequests = async () => {
+  const refreshOutgoingRequests = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -132,10 +132,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isLoggedIn]);
 
   // Bildirim sayısını yenile
-  const refreshRequestsCount = async () => {
+  const refreshRequestsCount = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -145,10 +145,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       console.error('Dostluq istəkləri sayısı alınarkən xəta baş verdi:', error);
       setRequestsCount(0);
     }
-  };
+  }, [isLoggedIn]);
 
   // Arkadaşlık durumunu kontrol et
-  const checkFriendshipStatus = async (otherUserId: number): Promise<FriendshipStatusResponse> => {
+  const checkFriendshipStatus = useCallback(async (otherUserId: number): Promise<FriendshipStatusResponse> => {
     if (!isLoggedIn || !userId) {
       return { status: 'none', message: 'Giriş edilməmişdir', actionable: false };
     }
@@ -164,10 +164,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       console.error('Dostluq statusu yoxlanılarkən xəta baş verdi:', error);
       return { status: 'none', message: 'Xəta baş verdi', actionable: false };
     }
-  };
+  }, [isLoggedIn, userId]);
 
   // Arkadaşlık isteği gönder
-  const sendFriendRequest = async (receiverId: number) => {
+  const sendFriendRequest = useCallback(async (receiverId: number) => {
     if (!isLoggedIn || !userId) {
       showErrorToast('Bu əməliyyatı icra etmək üçün daxil olmaq lazımdır');
       return;
@@ -194,10 +194,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
         showErrorToast('Dostluq istəyi göndərilə bilmədi');
       }
     }
-  };
+  }, [isLoggedIn, userId, refreshFriends, refreshOutgoingRequests]);
 
   // Arkadaşlık isteğini kabul et
-  const acceptFriendRequest = async (requestId: number) => {
+  const acceptFriendRequest = useCallback(async (requestId: number) => {
     if (!isLoggedIn) {
       showErrorToast('Bu əməliyyatı icra etmək üçün daxil olmaq lazımdır');
       return;
@@ -216,10 +216,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       console.error('Dostluq istəyi qəbul edilməsi zamanı xəta:', error);
       showErrorToast('Dostluq istəyi qəbul edilə bilmədi');
     }
-  };
+  }, [isLoggedIn, refreshIncomingRequests, refreshFriends, refreshRequestsCount]);
 
   // Arkadaşlık isteğini reddet
-  const rejectFriendRequest = async (requestId: number) => {
+  const rejectFriendRequest = useCallback(async (requestId: number) => {
     if (!isLoggedIn) {
       showErrorToast('Bu əməliyyatı icra etmək üçün daxil olmaq lazımdır');
       return;
@@ -237,10 +237,10 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       console.error('Dostluq istəyi rədd edilməsi zamanı xəta:', error);
       showErrorToast('Dostluq istəyi rədd edilə bilmədi');
     }
-  };
+  }, [isLoggedIn, refreshIncomingRequests, refreshRequestsCount]);
 
   // Arkadaşlıktan çıkar
-  const removeFriend = async (friendId: number) => {
+  const removeFriend = useCallback(async (friendId: number) => {
     if (!isLoggedIn) {
       showErrorToast('Bu əməliyyatı icra etmək üçün daxil olmaq lazımdır');
       return;
@@ -257,7 +257,7 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       console.error('Dostluq əlaqəsi silinməsi zamanı xəta:', error);
       showErrorToast('Dostluq əlaqəsi silinə bilmədi');
     }
-  };
+  }, [isLoggedIn, refreshFriends]);
 
   // Kullanıcı oturum açtığında verileri yükle
   useEffect(() => {
@@ -270,7 +270,7 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       setOutgoingRequests([]);
       setRequestsCount(0);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, refreshRequestsCount]);
 
   // Context değerlerini hazırla
   const value = {
@@ -297,4 +297,4 @@ export const FriendProvider = ({ children }: FriendProviderProps) => {
       {children}
     </FriendContext.Provider>
   );
-}; 
+};

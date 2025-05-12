@@ -125,6 +125,33 @@ const MovieCardList: React.FC<MovieCardListProps> = ({
                   >
                     <i className='bx bx-trash' style={{ fontSize: '18px' }}></i>
                   </button>
+                  
+                  {/* Paylaşım butonu */}
+                  <button
+                    className="share-button"
+                    disabled
+                    style={{
+                      position: 'absolute',
+                      top: '46px',
+                      right: '8px',
+                      background: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '30px',
+                      height: '30px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      transition: 'all 0.2s',
+                      color: '#9e9e9e',
+                      zIndex: 2,
+                      opacity: 0.7,
+                      cursor: 'not-allowed',
+                    }}
+                  >
+                    <i className='bx bx-send' style={{ fontSize: '18px' }}></i>
+                  </button>
 
                   <RouterLink 
                     to={`/movie/${movie.imdb_id || movie.id}`}

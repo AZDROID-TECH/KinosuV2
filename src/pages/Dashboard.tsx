@@ -273,10 +273,12 @@ const Dashboard = () => {
         <Button
           variant="contained"
           onClick={() => setOpenDialog(true)}
+          className="add-movie-button"
           sx={{
             borderRadius: 2,
             textTransform: 'none',
             boxShadow: 'none',
+            display: { xs: 'none', sm: 'flex' },
             '&:hover': {
               boxShadow: 'none',
               bgcolor: 'primary.dark',

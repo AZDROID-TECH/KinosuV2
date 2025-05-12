@@ -1,17 +1,24 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, Box, CircularProgress } from '@mui/material';
-import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
-import { FriendProvider } from './context/FriendContext';
-import { OnlineStatusProvider } from './context/OnlineStatusContext';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { CssBaseline, Box, CircularProgress } from '@mui/material';
 import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Context Providers
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext';
+import { FriendProvider } from './context/FriendContext';
+import { OnlineStatusProvider } from './context/OnlineStatusContext';
+import { HeaderMenuProvider } from './context/HeaderMenuContext';
+
+// Components
 import Header from './components/Header';
 import Footer from './components/Footer';
+import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminLayout from './components/AdminLayout';
+import MobileBottomMenu from './components/MobileBottomMenu';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -39,12 +46,23 @@ const LoadingFallback = () => (
 
 // LocationAware wrapper component to determine routes
 const AppContent = () => {
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
+
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleSidebarClose = () => {
+    setSidebarOpen(false);
+  };
+
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <div className="app-container">
       {!isAdminRoute && <Header />}
+      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} variant="temporary" />
       <main style={{ height: isAdminRoute ? '100vh' : 'auto' }}>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
@@ -79,6 +97,7 @@ const AppContent = () => {
         </Suspense>
       </main>
       {!isAdminRoute && <Footer />}
+      <MobileBottomMenu />
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -96,6 +115,7 @@ const AppContent = () => {
   );
 }
 
+// Main App component
 function App() {
   return (
     <Router>
@@ -104,7 +124,9 @@ function App() {
         <AuthProvider>
           <OnlineStatusProvider>
             <FriendProvider>
-              <AppContent />
+              <HeaderMenuProvider>
+                <AppContent />
+              </HeaderMenuProvider>
             </FriendProvider>
           </OnlineStatusProvider>
         </AuthProvider>
@@ -113,4 +135,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
