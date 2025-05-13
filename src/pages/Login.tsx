@@ -21,6 +21,8 @@ import { useAuth } from '../context/AuthContext';
 import 'boxicons/css/boxicons.min.css';
 import { authAPI } from '../services/api';
 import { showErrorToast, showSuccessToast } from '../utils/toastHelper';
+import SlideCaptcha from '../components/Common/SlideCaptcha';
+import useCaptcha from '../hooks/useCaptcha';
 
 const Login = () => {
   const { login, isLoggedIn } = useAuth();
@@ -38,6 +40,16 @@ const Login = () => {
   const isDarkMode = theme.palette.mode === 'dark';
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Captcha hook'unu kullan
+  const { 
+    isCaptchaOpen, 
+    isCaptchaVerified, 
+    openCaptcha, 
+    closeCaptcha, 
+    verifyCaptcha, 
+    resetCaptcha 
+  } = useCaptcha();
 
   // URL'den 'expired' parametresini kontrol et
   const queryParams = new URLSearchParams(location.search);
@@ -58,8 +70,32 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.username.trim() || !formData.password.trim()) {
-      showErrorToast('İstifadəçi adı və şifrə daxil edin');
+    // Form doğrulama kontrolleri
+    if (!formData.username.trim() && !formData.password.trim()) {
+      showErrorToast('İstifadəçi adı/email və şifrə daxil edin');
+      return;
+    }
+    
+    if (!formData.username.trim()) {
+      showErrorToast('İstifadəçi adı və ya email daxil edin');
+      return;
+    }
+    
+    if (!formData.password.trim()) {
+      showErrorToast('Şifrə daxil edin');
+      return;
+    }
+    
+    // Email formatı kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(formData.username) && !formData.username.includes('.')) {
+      showErrorToast('Düzgün email formatı daxil edin');
+      return;
+    }
+
+    // Doğrulama yapılmadıysa captcha aç
+    if (!isCaptchaVerified) {
+      openCaptcha();
       return;
     }
 
@@ -68,13 +104,36 @@ const Login = () => {
       if (!tokenExpired) {
         showSuccessToast('Uğurla daxil oldunuz!');
       }
+      // İşlem tamamlandıktan sonra captcha'yı sıfırla
+      resetCaptcha();
     } catch (error) {
       console.error('Login error:', error);
-      if (typeof error === 'string') {
-        showErrorToast(error);
+      if (typeof error === 'object' && error !== null && 'error' in error) {
+        const errorMsg = (error as {error: string}).error;
+        
+        // Spesifik hataları kontrol et ve daha açıklayıcı mesajlar göster
+        if (errorMsg.includes('İstifadəçi tapılmadı') || errorMsg.includes('Yanlış istifadəçi')) {
+          showErrorToast('Bu istifadəçi adı və ya email ilə hesab tapılmadı');
+        } else if (errorMsg.includes('şifrə') || errorMsg.includes('Şifrə')) {
+          showErrorToast('Daxil etdiyiniz şifrə yanlışdır');
+        } else if (errorMsg.includes('Verilənlər bazası')) {
+          showErrorToast('Server xətası: verilənlər bazası problemi');
+        } else {
+          showErrorToast(errorMsg);
+        }
+      } else if (typeof error === 'string') {
+        if (error.includes('istifadəçi') || error.includes('tapılmadı')) {
+          showErrorToast('Bu istifadəçi adı və ya email ilə hesab tapılmadı');
+        } else if (error.includes('şifrə') || error.includes('Şifrə')) {
+          showErrorToast('Daxil etdiyiniz şifrə yanlışdır');
+        } else {
+          showErrorToast(error);
+        }
       } else {
         showErrorToast('Daxil olma zamanı xəta baş verdi');
       }
+      // Hata durumunda da captcha'yı sıfırla
+      resetCaptcha();
     }
   };
 
@@ -98,6 +157,71 @@ const Login = () => {
       showErrorToast(errorMsg);
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  // Captcha doğrulandığında giriş yapma işlemini gerçekleştir
+  const handleCaptchaVerified = async () => {
+    verifyCaptcha();
+    
+    // Form doğrulama kontrolleri
+    if (!formData.username.trim() && !formData.password.trim()) {
+      showErrorToast('İstifadəçi adı/email və şifrə daxil edin');
+      return;
+    }
+    
+    if (!formData.username.trim()) {
+      showErrorToast('İstifadəçi adı və ya email daxil edin');
+      return;
+    }
+    
+    if (!formData.password.trim()) {
+      showErrorToast('Şifrə daxil edin');
+      return;
+    }
+    
+    // Email formatı kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(formData.username) && !formData.username.includes('.')) {
+      showErrorToast('Düzgün email formatı daxil edin');
+      return;
+    }
+
+    try {
+      await login(formData.username, formData.password);
+      if (!tokenExpired) {
+        showSuccessToast('Uğurla daxil oldunuz!');
+      }
+      // İşlem tamamlandıktan sonra captcha'yı sıfırla
+      resetCaptcha();
+    } catch (error) {
+      console.error('Login error:', error);
+      if (typeof error === 'object' && error !== null && 'error' in error) {
+        const errorMsg = (error as {error: string}).error;
+        
+        // Spesifik hataları kontrol et ve daha açıklayıcı mesajlar göster
+        if (errorMsg.includes('İstifadəçi tapılmadı') || errorMsg.includes('Yanlış istifadəçi')) {
+          showErrorToast('Bu istifadəçi adı və ya email ilə hesab tapılmadı');
+        } else if (errorMsg.includes('şifrə') || errorMsg.includes('Şifrə')) {
+          showErrorToast('Daxil etdiyiniz şifrə yanlışdır');
+        } else if (errorMsg.includes('Verilənlər bazası')) {
+          showErrorToast('Server xətası: verilənlər bazası problemi');
+        } else {
+          showErrorToast(errorMsg);
+        }
+      } else if (typeof error === 'string') {
+        if (error.includes('istifadəçi') || error.includes('tapılmadı')) {
+          showErrorToast('Bu istifadəçi adı və ya email ilə hesab tapılmadı');
+        } else if (error.includes('şifrə') || error.includes('Şifrə')) {
+          showErrorToast('Daxil etdiyiniz şifrə yanlışdır');
+        } else {
+          showErrorToast(error);
+        }
+      } else {
+        showErrorToast('Daxil olma zamanı xəta baş verdi');
+      }
+      // Hata durumunda da captcha'yı sıfırla
+      resetCaptcha();
     }
   };
 
@@ -313,6 +437,7 @@ const Login = () => {
                   },
                 }}
               />
+              
               <TextField
                 required
                 fullWidth
@@ -404,34 +529,53 @@ const Login = () => {
                 type="submit"
                 fullWidth
                 variant="contained"
-                size={isMobile ? "medium" : "large"}
                 sx={{
-                  py: isMobile ? 1 : 1.2,
-                  borderRadius: 2,
-                  fontWeight: 'bold',
-                  textTransform: 'none',
-                  fontSize: isMobile ? '0.9rem' : '1rem',
-                  boxShadow: isDarkMode 
-                    ? '0 4px 20px rgba(156, 39, 176, 0.4)' 
-                    : '0 4px 20px rgba(63, 81, 181, 0.3)',
+                  mt: 3, 
+                  mb: 2, 
+                  py: 1.2,
+                  background: isCaptchaVerified
+                    ? 'linear-gradient(90deg, #3f51b5, #9c27b0)'
+                    : 'linear-gradient(90deg, #7986cb, #ba68c8)',
                   transition: 'all 0.3s',
-                  background: isDarkMode
-                    ? 'linear-gradient(45deg, #9c27b0 0%, #673ab7 100%)'
-                    : 'linear-gradient(45deg, #3f51b5 0%, #673ab7 100%)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  fontWeight: 500,
+                  boxShadow: isDarkMode 
+                    ? '0 4px 10px rgba(0, 0, 0, 0.3)'
+                    : '0 4px 10px rgba(0, 0, 0, 0.1)',
                   '&:hover': {
-                    transform: 'translateY(-2px)',
+                    background: isCaptchaVerified
+                      ? 'linear-gradient(90deg, #303f9f, #7b1fa2)'
+                      : 'linear-gradient(90deg, #5c6bc0, #ab47bc)',
                     boxShadow: isDarkMode 
-                      ? '0 6px 25px rgba(156, 39, 176, 0.5)' 
-                      : '0 6px 25px rgba(63, 81, 181, 0.4)',
-                    background: isDarkMode
-                      ? 'linear-gradient(45deg, #9c27b0 30%, #673ab7 90%)'
-                      : 'linear-gradient(45deg, #3f51b5 30%, #673ab7 90%)',
+                      ? '0 6px 15px rgba(0, 0, 0, 0.4)'
+                      : '0 6px 15px rgba(0, 0, 0, 0.2)',
                   },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: '-100%',
+                    width: '100%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transition: 'all 0.8s',
+                  },
+                  '&:hover::after': {
+                    left: '100%',
+                  }
                 }}
+                startIcon={<i className='bx bx-shield-quarter' style={{ fontSize: 20 }}></i>}
               >
-                <i className='bx bx-log-in' style={{ fontSize: isMobile ? '20px' : '22px', marginRight: '8px' }}></i>
                 Daxil ol
               </Button>
+
+              {/* Captcha bileşeni */}
+              <SlideCaptcha 
+                isOpen={isCaptchaOpen} 
+                onClose={closeCaptcha} 
+                onVerify={handleCaptchaVerified} 
+              />
 
               <Box 
                 sx={{ 

@@ -16,6 +16,8 @@ import 'boxicons/css/boxicons.min.css';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import { showSuccessToast, showErrorToast } from '../utils/toastHelper';
+import SlideCaptcha from '../components/Common/SlideCaptcha';
+import useCaptcha from '../hooks/useCaptcha';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -31,24 +33,182 @@ const Register = () => {
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const isDarkMode = theme.palette.mode === 'dark';
 
+  // Captcha hook'unu kullan
+  const { 
+    isCaptchaOpen, 
+    isCaptchaVerified, 
+    openCaptcha, 
+    closeCaptcha, 
+    verifyCaptcha, 
+    resetCaptcha 
+  } = useCaptcha();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Form alanlarının boş olup olmadığını kontrol et
+    if (!formData.username.trim()) {
+      showErrorToast('İstifadəçi adı daxil edin');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      showErrorToast('Email ünvanı daxil edin');
+      return;
+    }
+
+    // Email formatını kontrol et
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showErrorToast('Düzgün email formatı daxil edin');
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      showErrorToast('Şifrə daxil edin');
+      return;
+    }
+
+    // Şifre uzunluğunu kontrol et
+    if (formData.password.length < 6) {
+      showErrorToast('Şifrə ən azı 6 simvol olmalıdır');
+      return;
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      showErrorToast('Şifrəni təkrarlayın');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
-      const errorMsg = 'Təkrarlanan şifrə eyni olmalıdır';
-      showErrorToast(errorMsg);
+      showErrorToast('Təkrarlanan şifrə eyni olmalıdır');
+      return;
+    }
+
+    // Doğrulama yapılmadıysa captcha aç
+    if (!isCaptchaVerified) {
+      openCaptcha();
       return;
     }
 
     try {
       await authAPI.register(formData);
       showSuccessToast('Hesabınız uğurla yaradıldı! İndi daxil ola bilərsiniz.');
+      // İşlem tamamlandıktan sonra captcha'yı sıfırla
+      resetCaptcha();
       setTimeout(() => {
         navigate('/login');
       }, 1500);
       
     } catch (err: any) {
-      showErrorToast(err.message || 'Qeydiyyat zamanı xəta baş verdi.');
+      if (typeof err === 'object' && err !== null && 'error' in err) {
+        const errorMsg = err.error as string;
+        
+        // Spesifik hataları kontrol et ve daha açıklayıcı mesajlar göster
+        if (errorMsg.includes('istifadə olunur')) {
+          showErrorToast('Bu istifadəçi adı və ya email artıq istifadə olunur');
+        } else if (errorMsg.includes('email')) {
+          showErrorToast('Düzgün email ünvanı daxil edin');
+        } else if (errorMsg.includes('Verilənlər bazası')) {
+          showErrorToast('Server xətası: verilənlər bazası problemi');
+        } else {
+          showErrorToast(errorMsg);
+        }
+      } else if (err && typeof err.message === 'string') {
+        if (err.message.includes('istifadə olunur')) {
+          showErrorToast('Bu istifadəçi adı və ya email artıq istifadə olunur');
+        } else if (err.message.includes('email')) {
+          showErrorToast('Düzgün email ünvanı daxil edin');
+        } else {
+          showErrorToast(err.message);
+        }
+      } else {
+        showErrorToast('Qeydiyyat zamanı xəta baş verdi.');
+      }
+      // Hata durumunda da captcha'yı sıfırla
+      resetCaptcha();
+    }
+  };
+
+  // Captcha doğrulandığında kayıt işlemini gerçekleştir
+  const handleCaptchaVerified = async () => {
+    verifyCaptcha();
+    
+    // Form alanlarının boş olup olmadığını kontrol et
+    if (!formData.username.trim()) {
+      showErrorToast('İstifadəçi adı daxil edin');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      showErrorToast('Email ünvanı daxil edin');
+      return;
+    }
+
+    // Email formatını kontrol et
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showErrorToast('Düzgün email formatı daxil edin');
+      return;
+    }
+
+    if (!formData.password.trim()) {
+      showErrorToast('Şifrə daxil edin');
+      return;
+    }
+
+    // Şifre uzunluğunu kontrol et
+    if (formData.password.length < 6) {
+      showErrorToast('Şifrə ən azı 6 simvol olmalıdır');
+      return;
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      showErrorToast('Şifrəni təkrarlayın');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      showErrorToast('Təkrarlanan şifrə eyni olmalıdır');
+      return;
+    }
+
+    try {
+      await authAPI.register(formData);
+      showSuccessToast('Hesabınız uğurla yaradıldı! İndi daxil ola bilərsiniz.');
+      // İşlem tamamlandıktan sonra captcha'yı sıfırla
+      resetCaptcha();
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+      
+    } catch (err: any) {
+      if (typeof err === 'object' && err !== null && 'error' in err) {
+        const errorMsg = err.error as string;
+        
+        // Spesifik hataları kontrol et ve daha açıklayıcı mesajlar göster
+        if (errorMsg.includes('istifadə olunur')) {
+          showErrorToast('Bu istifadəçi adı və ya email artıq istifadə olunur');
+        } else if (errorMsg.includes('email')) {
+          showErrorToast('Düzgün email ünvanı daxil edin');
+        } else if (errorMsg.includes('Verilənlər bazası')) {
+          showErrorToast('Server xətası: verilənlər bazası problemi');
+        } else {
+          showErrorToast(errorMsg);
+        }
+      } else if (err && typeof err.message === 'string') {
+        if (err.message.includes('istifadə olunur')) {
+          showErrorToast('Bu istifadəçi adı və ya email artıq istifadə olunur');
+        } else if (err.message.includes('email')) {
+          showErrorToast('Düzgün email ünvanı daxil edin');
+        } else {
+          showErrorToast(err.message);
+        }
+      } else {
+        showErrorToast('Qeydiyyat zamanı xəta baş verdi.');
+      }
+      // Hata durumunda da captcha'yı sıfırla
+      resetCaptcha();
     }
   };
 
@@ -447,34 +607,53 @@ const Register = () => {
               type="submit"
               fullWidth
               variant="contained"
-              size={isMobile ? "medium" : "large"}
               sx={{
-                py: isMobile ? 1 : 1.2,
-                borderRadius: 2,
-                fontWeight: 'bold',
-                textTransform: 'none',
-                fontSize: isMobile ? '0.9rem' : '1rem',
-                boxShadow: isDarkMode 
-                  ? '0 4px 20px rgba(156, 39, 176, 0.4)' 
-                  : '0 4px 20px rgba(63, 81, 181, 0.3)',
+                mt: 3, 
+                mb: 2, 
+                py: 1.2,
+                background: isCaptchaVerified
+                  ? 'linear-gradient(90deg, #3f51b5, #9c27b0)'
+                  : 'linear-gradient(90deg, #7986cb, #ba68c8)',
                 transition: 'all 0.3s',
-                background: isDarkMode
-                  ? 'linear-gradient(45deg, #9c27b0 0%, #673ab7 100%)'
-                  : 'linear-gradient(45deg, #3f51b5 0%, #673ab7 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+                fontWeight: 500,
+                boxShadow: isDarkMode 
+                  ? '0 4px 10px rgba(0, 0, 0, 0.3)'
+                  : '0 4px 10px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
-                  transform: 'translateY(-2px)',
+                  background: isCaptchaVerified
+                    ? 'linear-gradient(90deg, #303f9f, #7b1fa2)'
+                    : 'linear-gradient(90deg, #5c6bc0, #ab47bc)',
                   boxShadow: isDarkMode 
-                    ? '0 6px 25px rgba(156, 39, 176, 0.5)' 
-                    : '0 6px 25px rgba(63, 81, 181, 0.4)',
-                  background: isDarkMode
-                    ? 'linear-gradient(45deg, #9c27b0 30%, #673ab7 90%)'
-                    : 'linear-gradient(45deg, #3f51b5 30%, #673ab7 90%)',
+                    ? '0 6px 15px rgba(0, 0, 0, 0.4)'
+                    : '0 6px 15px rgba(0, 0, 0, 0.2)',
                 },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: '-100%',
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                  transition: 'all 0.8s',
+                },
+                '&:hover::after': {
+                  left: '100%',
+                }
               }}
+              startIcon={<i className='bx bx-shield-quarter' style={{ fontSize: 20 }}></i>}
             >
-              <i className='bx bx-user-check' style={{ fontSize: isMobile ? '20px' : '22px', marginRight: '8px' }}></i>
               Qeydiyyatdan keç
             </Button>
+
+            {/* Captcha bileşeni */}
+            <SlideCaptcha 
+              isOpen={isCaptchaOpen} 
+              onClose={closeCaptcha} 
+              onVerify={handleCaptchaVerified} 
+            />
 
             <Box 
               sx={{ 

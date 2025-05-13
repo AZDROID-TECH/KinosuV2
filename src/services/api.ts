@@ -1,7 +1,7 @@
 // backend ve frontend tek sunucuda çalıştığı için tüm API çağrıları göreceli URL kullanıyor
 
 interface LoginData {
-  username: string;
+  username: string; // İstifadəçi adı və ya email olaraq istifadə edilə bilər
   password: string;
 }
 
@@ -130,6 +130,7 @@ const handleApiResponse = async (response: Response) => {
 export const authAPI = {
   login: async (data: LoginData) => {
     try {
+      // username sahəsi istifadəçi adı və ya email ola bilər
       const response = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

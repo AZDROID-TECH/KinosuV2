@@ -23,7 +23,11 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Stack,
-  Avatar
+  Avatar,
+  Grid,
+  Card,
+  Badge,
+  useMediaQuery
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -60,7 +64,7 @@ const TabPanel = (props: TabPanelProps) => {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
           {children}
         </Box>
       )}
@@ -81,7 +85,8 @@ const FriendsPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Array<{id: number, username: string, avatar_url: string | null}>>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [requestSentUsers, setRequestSentUsers] = useState<number[]>([]);
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useOnlineStatus();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const { 
     friends, 
@@ -200,6 +205,7 @@ const FriendsPage: React.FC = () => {
     }
   };
 
+  // İşlevsellik aynı, ancak tasarım değiştirildi - kart içinde kart görünümü azaltıldı
   const renderFriends = () => {
     if (friends.length === 0) {
       return (
@@ -212,121 +218,141 @@ const FriendsPage: React.FC = () => {
     }
 
     return (
-      <Paper
-        elevation={1}
-        sx={{
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: darkMode 
-            ? alpha(theme.palette.background.paper, 0.6)
-            : alpha(theme.palette.background.paper, 0.8)
-        }}
-      >
-        <List sx={{ padding: 0 }}>
-          {friends.map((friend, index) => (
-            <React.Fragment key={friend.id}>
-              <ListItem 
-                sx={{ 
-                  py: 2,
-                  px: { xs: 2, sm: 3 },
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.05)
-                  }
+      <Grid container spacing={2}>
+        {friends.map((friend) => (
+          <Grid item xs={12} sm={6} md={4} key={friend.id}>
+            <Card
+              elevation={1}
+              sx={{
+                borderRadius: 2,
+                p: 0,
+                bgcolor: darkMode 
+                  ? alpha(theme.palette.background.paper, 0.6)
+                  : alpha(theme.palette.background.paper, 0.8),
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  p: 2, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 }}
               >
-                <ListItemAvatar sx={{ mr: 2 }}>
-                  <StatusAvatar 
-                    src={friend.avatar_url || undefined} 
-                    alt={friend.username}
-                    size={56}
-                    isOnline={isUserOnline(friend.id)}
-                    sx={{ 
-                      border: `2px solid ${isUserOnline(friend.id) ? theme.palette.success.main : theme.palette.grey[500]}`,
-                      transition: 'transform 0.2s',
-                      '&:hover': {
-                        transform: 'scale(1.05)'
-                      }
-                    }}
-                  />
-                </ListItemAvatar>
-                
-                <ListItemText 
-                  primary={
-                    <RouterLink 
-                      to={`/user/${friend.id}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Typography 
-                        variant="h6" 
-                        component="span"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: { xs: '1rem', sm: '1.1rem' },
-                          color: 'text.primary',
-                          '&:hover': {
-                            color: theme.palette.primary.main
-                          }
-                        }}
-                      >
-                        {friend.username}
-                      </Typography>
-                    </RouterLink>
-                  }
-                  sx={{ my: 0 }}
+                <StatusAvatar 
+                  src={friend.avatar_url || undefined} 
+                  alt={friend.username}
+                  size={60}
+                  isOnline={isUserOnline(friend.id)}
+                  sx={{ 
+                    border: `2px solid ${isUserOnline(friend.id) ? theme.palette.success.main : theme.palette.grey[500]}`,
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'scale(1.05)'
+                    }
+                  }}
                 />
                 
-                <ListItemSecondaryAction>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Mesaj göndər">
-                      <span>
-                        <IconButton 
-                          size="small" 
-                          color="primary" 
-                          disabled={true}
-                          sx={{ 
-                            borderRadius: 1.5,
-                            opacity: 0.7,
-                            '&:hover': {
-                              bgcolor: alpha(theme.palette.primary.main, 0.1)
-                            }
-                          }}
-                        >
-                          <ChatIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip title="Dostluqdan Çıxar">
-                      <span>
-                        <IconButton 
-                          size="small" 
-                          color="error" 
-                          onClick={() => handleRemoveFriend(friend.id)}
-                          sx={{ 
-                            borderRadius: 1.5,
-                            '&:hover': {
-                              bgcolor: alpha(theme.palette.error.main, 0.1)
-                            }
-                          }}
-                        >
-                          <PersonRemoveIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </Stack>
-                </ListItemSecondaryAction>
-              </ListItem>
+                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <RouterLink 
+                    to={`/user/${friend.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Typography 
+                      variant="h6" 
+                      component="span"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: '1.1rem',
+                        color: 'text.primary',
+                        display: 'block',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        mb: 0.5,
+                        '&:hover': {
+                          color: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      {friend.username}
+                    </Typography>
+                  </RouterLink>
+                  
+                  {isUserOnline(friend.id) ? (
+                    <Chip 
+                      size="small" 
+                      color="success" 
+                      label="Onlayn"
+                      sx={{ height: 22, fontSize: '0.75rem' }} 
+                    />
+                  ) : (
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mt: 0.2
+                    }}>
+                      <AccessTimeIcon sx={{ color: theme.palette.text.secondary, fontSize: 14 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {formatLastSeen(lastSeen(friend.id))}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
               
-              {index < friends.length - 1 && (
-                <Divider component="li" />
-              )}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
+              <Box sx={{ p: 2, display: 'flex', gap: 1, justifyContent: 'center', mt: 'auto' }}>
+                <Tooltip title="Mesaj göndər">
+                  <span style={{ flexGrow: 1 }}>
+                    <Button 
+                      fullWidth
+                      size="small" 
+                      variant="outlined"
+                      color="primary" 
+                      disabled={true}
+                      startIcon={<ChatIcon />}
+                      sx={{ 
+                        borderRadius: 1.5,
+                        opacity: 0.7,
+                      }}
+                    >
+                      Mesaj
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Dostluqdan Çıxar">
+                  <Button 
+                    size="small" 
+                    variant="outlined"
+                    color="error" 
+                    onClick={() => handleRemoveFriend(friend.id)}
+                    startIcon={<PersonRemoveIcon />}
+                    sx={{ 
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    Sil
+                  </Button>
+                </Tooltip>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     );
   };
 
+  // Yeni tasarım - gelen istekler için kart görünümü
   const renderIncomingRequests = () => {
     if (incomingRequests.length === 0) {
       return (
@@ -339,129 +365,137 @@ const FriendsPage: React.FC = () => {
     }
 
     return (
-      <Paper
-        elevation={1}
-        sx={{
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: darkMode 
-            ? alpha(theme.palette.background.paper, 0.6)
-            : alpha(theme.palette.background.paper, 0.8)
-        }}
-      >
-        <List sx={{ padding: 0 }}>
-          {incomingRequests.map((request, index) => (
-            <React.Fragment key={request.id}>
-              <ListItem 
-                sx={{ 
-                  py: 2,
-                  px: { xs: 2, sm: 3 },
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.05)
-                  }
+      <Grid container spacing={2}>
+        {incomingRequests.map((request) => (
+          <Grid item xs={12} sm={6} md={4} key={request.id}>
+            <Card
+              elevation={1}
+              sx={{
+                borderRadius: 2,
+                p: 0,
+                bgcolor: darkMode 
+                  ? alpha(theme.palette.background.paper, 0.6)
+                  : alpha(theme.palette.background.paper, 0.8),
+                transition: 'all 0.2s ease',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: `3px solid ${theme.palette.info.main}`,
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  p: 2, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 }}
               >
-                <ListItemAvatar sx={{ mr: 2 }}>
-                  <StatusAvatar
-                    src={request.sender?.avatar_url || undefined}
-                    alt={request.sender?.username || ''}
-                    size={56}
-                    isOnline={request.sender?.id ? isUserOnline(request.sender.id) : false}
-                    sx={{
-                      border: `2px solid ${theme.palette.info.main}`
-                    }}
-                  />
-                </ListItemAvatar>
-                
-                <ListItemText 
-                  primary={
-                    <RouterLink 
-                      to={`/user/${request.sender?.id}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <Typography 
-                        variant="h6" 
-                        component="span"
-                        sx={{ 
-                          color: 'text.primary',
-                          fontWeight: 600,
-                          fontSize: { xs: '1rem', sm: '1.1rem' },
-                          '&:hover': {
-                            color: theme.palette.primary.main
-                          }
-                        }}
-                      >
-                        {request.sender?.username}
-                      </Typography>
-                    </RouterLink>
-                  }
-                  secondary={
-                    <Box component="span" sx={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mt: 0.5
-                    }}>
-                      <EmailIcon fontSize="small" color="info" sx={{ fontSize: 16 }} />
-                      <Typography variant="body2" component="span" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                        Sizə dostluq istəyi göndərdi
-                      </Typography>
-                    </Box>
-                  }
+                <StatusAvatar
+                  src={request.sender?.avatar_url || undefined}
+                  alt={request.sender?.username || ''}
+                  size={60}
+                  isOnline={request.sender?.id ? isUserOnline(request.sender.id) : false}
+                  sx={{
+                    border: `2px solid ${theme.palette.info.main}`
+                  }}
                 />
                 
-                <ListItemSecondaryAction sx={{ 
-                  display: 'flex', 
-                  gap: 1,
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: 'center'
-                }}>
-                  <Button 
-                    variant="contained"
-                    color="primary"
-                    startIcon={<CheckCircleIcon />}
-                    onClick={() => handleAcceptRequest(request.id)}
-                    size="small"
-                    sx={{ 
-                      borderRadius: 1.5,
-                      minWidth: { xs: '36px', sm: '110px' },
-                      mb: { xs: 1, sm: 0 },
-                      px: { xs: 1, sm: 2 }
-                    }}
+                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <RouterLink 
+                    to={`/user/${request.sender?.id}`}
+                    style={{ textDecoration: 'none' }}
                   >
-                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Qəbul Et</Box>
-                    <CheckCircleIcon sx={{ display: { xs: 'block', sm: 'none' }, fontSize: 20 }} />
-                  </Button>
+                    <Typography 
+                      variant="h6" 
+                      component="span"
+                      sx={{ 
+                        color: 'text.primary',
+                        fontWeight: 600,
+                        fontSize: '1.1rem',
+                        display: 'block',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        mb: 0.5,
+                        '&:hover': {
+                          color: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      {request.sender?.username}
+                    </Typography>
+                  </RouterLink>
                   
-                  <Button 
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CancelIcon />}
-                    onClick={() => handleRejectRequest(request.id)}
-                    size="small"
-                    sx={{ 
-                      borderRadius: 1.5,
-                      minWidth: { xs: '36px', sm: '110px' },
-                      px: { xs: 1, sm: 2 }
-                    }}
-                  >
-                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Rədd Et</Box>
-                    <CancelIcon sx={{ display: { xs: 'block', sm: 'none' }, fontSize: 20 }} />
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
+                  <Box sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}>
+                    <EmailIcon fontSize="small" color="info" sx={{ fontSize: 16 }} />
+                    <Typography variant="caption" component="span" color="text.secondary">
+                      Sizə dostluq istəyi göndərdi
+                    </Typography>
+                  </Box>
+
+                  {request.sender?.id && !isUserOnline(request.sender.id) && (
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mt: 0.5
+                    }}>
+                      <AccessTimeIcon sx={{ color: theme.palette.text.secondary, fontSize: 14 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {formatLastSeen(lastSeen(request.sender.id))}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
               
-              {index < incomingRequests.length - 1 && (
-                <Divider component="li" />
-              )}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
+              <Box sx={{ p: 2, display: 'flex', gap: 1, justifyContent: 'space-between', mt: 'auto' }}>
+                <Button 
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  startIcon={<CheckCircleIcon />}
+                  onClick={() => handleAcceptRequest(request.id)}
+                  size="small"
+                  sx={{ 
+                    borderRadius: 1.5,
+                  }}
+                >
+                  Qəbul Et
+                </Button>
+                
+                <Button 
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  startIcon={<CancelIcon />}
+                  onClick={() => handleRejectRequest(request.id)}
+                  size="small"
+                  sx={{ 
+                    borderRadius: 1.5,
+                  }}
+                >
+                  Rədd Et
+                </Button>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     );
   };
 
+  // Yeni tasarım - giden istekler için kart görünümü
   const renderOutgoingRequests = () => {
     if (outgoingRequests.length === 0) {
       return (
@@ -474,45 +508,177 @@ const FriendsPage: React.FC = () => {
     }
 
     return (
-      <Paper
-        elevation={1}
-        sx={{
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: darkMode 
-            ? alpha(theme.palette.background.paper, 0.6)
-            : alpha(theme.palette.background.paper, 0.8)
-        }}
-      >
-        <List sx={{ padding: 0 }}>
-          {outgoingRequests.map((request, index) => (
-            <React.Fragment key={request.id}>
-              <ListItem 
-                sx={{ 
-                  py: 2,
-                  px: { xs: 2, sm: 3 },
+      <Grid container spacing={2}>
+        {outgoingRequests.map((request) => (
+          <Grid item xs={12} sm={6} md={4} key={request.id}>
+            <Card
+              elevation={1}
+              sx={{
+                borderRadius: 2,
+                p: 0,
+                bgcolor: darkMode 
+                  ? alpha(theme.palette.background.paper, 0.6)
+                  : alpha(theme.palette.background.paper, 0.8),
+                transition: 'all 0.2s ease',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: `3px solid ${theme.palette.warning.main}`,
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  p: 2, 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                }}
+              >
+                <StatusAvatar
+                  src={request.receiver?.avatar_url || undefined}
+                  alt={request.receiver?.username || ''}
+                  size={60}
+                  isOnline={request.receiver?.id ? isUserOnline(request.receiver.id) : false}
+                  sx={{
+                    border: `2px solid ${theme.palette.warning.main}`
+                  }}
+                />
+                
+                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <RouterLink 
+                    to={`/user/${request.receiver?.id}`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Typography 
+                      variant="h6" 
+                      component="span"
+                      sx={{ 
+                        color: 'text.primary',
+                        fontWeight: 600,
+                        fontSize: '1.1rem',
+                        display: 'block',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        mb: 0.5,
+                        '&:hover': {
+                          color: theme.palette.primary.main
+                        }
+                      }}
+                    >
+                      {request.receiver?.username}
+                    </Typography>
+                  </RouterLink>
+                  
+                  <Box sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}>
+                    <AccessTimeIcon fontSize="small" color="warning" sx={{ fontSize: 16 }} />
+                    <Typography variant="caption" component="span" color="text.secondary">
+                      İstək göndərildi, cavab gözlənilir
+                    </Typography>
+                  </Box>
+
+                  {request.receiver?.id && !isUserOnline(request.receiver.id) && (
+                    <Box sx={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mt: 0.5
+                    }}>
+                      <AccessTimeIcon sx={{ color: theme.palette.text.secondary, fontSize: 14 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {formatLastSeen(lastSeen(request.receiver.id))}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+              
+              <Box sx={{ p: 2, mt: 'auto' }}>
+                <Button 
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  startIcon={<CancelIcon />}
+                  onClick={() => handleCancelRequest(request.id)}
+                  size="small"
+                  sx={{ 
+                    borderRadius: 1.5,
+                  }}
+                >
+                  Ləğv Et
+                </Button>
+              </Box>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    );
+  };
+
+  // Yeni tasarım - arama sonuçları için kart görünümü
+  const renderSearchResults = () => {
+    if (searchResults.length === 0) {
+      return null;
+    }
+
+    return (
+      <Box mt={3}>
+        <Typography variant="h6" gutterBottom mb={2}>
+          Axtarış Nəticələri
+        </Typography>
+        <Grid container spacing={2}>
+          {searchResults.map((user) => (
+            <Grid item xs={12} sm={6} md={4} key={user.id}>
+              <Card
+                elevation={1}
+                sx={{
+                  borderRadius: 2,
+                  p: 0,
+                  bgcolor: darkMode 
+                    ? alpha(theme.palette.background.paper, 0.6)
+                    : alpha(theme.palette.background.paper, 0.8),
                   transition: 'all 0.2s ease',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderLeft: `3px solid ${theme.palette.secondary.main}`,
                   '&:hover': {
-                    bgcolor: alpha(theme.palette.warning.main, 0.05)
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4
                   }
                 }}
               >
-                <ListItemAvatar sx={{ mr: 2 }}>
+                <Box
+                  sx={{
+                    p: 2, 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  }}
+                >
                   <StatusAvatar
-                    src={request.receiver?.avatar_url || undefined}
-                    alt={request.receiver?.username || ''}
-                    size={56}
-                    isOnline={request.receiver?.id ? isUserOnline(request.receiver.id) : false}
-                    sx={{
-                      border: `2px solid ${theme.palette.warning.main}`
+                    src={user.avatar_url || undefined}
+                    alt={user.username}
+                    size={60}
+                    isOnline={isUserOnline(user.id)}
+                    sx={{ 
+                      border: `2px solid ${theme.palette.secondary.main}`
                     }}
                   />
-                </ListItemAvatar>
-                
-                <ListItemText 
-                  primary={
+                  
+                  <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
                     <RouterLink 
-                      to={`/user/${request.receiver?.id}`}
+                      to={`/user/${user.id}`}
                       style={{ textDecoration: 'none' }}
                     >
                       <Typography 
@@ -521,251 +687,221 @@ const FriendsPage: React.FC = () => {
                         sx={{ 
                           color: 'text.primary',
                           fontWeight: 600,
-                          fontSize: { xs: '1rem', sm: '1.1rem' },
+                          fontSize: '1.1rem',
+                          display: 'block',
+                          textOverflow: 'ellipsis',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          mb: 0.5,
                           '&:hover': {
                             color: theme.palette.primary.main
                           }
                         }}
                       >
-                        {request.receiver?.username}
+                        {user.username}
                       </Typography>
                     </RouterLink>
-                  }
-                  secondary={
-                    <Box component="span" sx={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mt: 0.5
-                    }}>
-                      <AccessTimeIcon fontSize="small" color="warning" sx={{ fontSize: 16 }} />
-                      <Typography variant="body2" component="span" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                        İstək göndərildi, cavab gözlənilir
-                      </Typography>
-                    </Box>
-                  }
-                />
-                
-                <ListItemSecondaryAction>
-                  <Button 
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CancelIcon sx={{ display: { xs: 'none', sm: 'block' } }} />}
-                    onClick={() => handleCancelRequest(request.id)}
-                    size="small"
-                    sx={{ 
-                      borderRadius: 1.5,
-                      minWidth: { xs: '36px', sm: '110px' },
-                      px: { xs: 1, sm: 2 }
-                    }}
-                  >
-                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Ləğv Et</Box>
-                    <CancelIcon sx={{ display: { xs: 'block', sm: 'none' }, fontSize: 20 }} />
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-              
-              {index < outgoingRequests.length - 1 && (
-                <Divider component="li" />
-              )}
-            </React.Fragment>
-          ))}
-        </List>
-      </Paper>
-    );
-  };
-
-  const renderSearchResults = () => {
-    if (searchResults.length === 0) {
-      return null;
-    }
-
-    return (
-      <Box mt={3}>
-        <Typography variant="h6" gutterBottom>
-          Axtarış Nəticələri
-        </Typography>
-        <Paper
-          elevation={1}
-          sx={{
-            borderRadius: 2,
-            overflow: 'hidden',
-            bgcolor: darkMode 
-              ? alpha(theme.palette.background.paper, 0.6)
-              : alpha(theme.palette.background.paper, 0.8)
-          }}
-        >
-          <List sx={{ padding: 0 }}>
-            {searchResults.map((user, index) => (
-              <React.Fragment key={user.id}>
-                <ListItem 
-                  sx={{ 
-                    py: 2,
-                    px: { xs: 2, sm: 3 },
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.secondary.main, 0.05)
-                    }
-                  }}
-                >
-                  <ListItemAvatar sx={{ mr: 2 }}>
-                    <StatusAvatar
-                      src={user.avatar_url || undefined}
-                      alt={user.username}
-                      size={56}
-                      isOnline={isUserOnline(user.id)}
+                    
+                    <Chip
+                      size="small"
+                      label={`ID: ${user.id}`}
+                      color="default"
                       sx={{ 
-                        border: `2px solid ${theme.palette.secondary.main}`
+                        fontSize: '0.7rem',
+                        opacity: 0.7,
+                        height: 22
                       }}
                     />
-                  </ListItemAvatar>
-                  
-                  <ListItemText 
-                    primary={
-                      <RouterLink 
-                        to={`/user/${user.id}`}
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <Typography 
-                          variant="h6" 
-                          component="span"
-                          sx={{ 
-                            color: 'text.primary',
-                            fontWeight: 600,
-                            fontSize: { xs: '1rem', sm: '1.1rem' },
-                            '&:hover': {
-                              color: theme.palette.primary.main
-                            }
-                          }}
-                        >
-                          {user.username}
-                        </Typography>
-                      </RouterLink>
-                    }
-                    secondary={
-                      <Chip
-                        size="small"
-                        label={`ID: ${user.id}`}
-                        color="default"
-                        sx={{ 
-                          mt: 0.5,
-                          fontSize: '0.7rem',
-                          opacity: 0.7,
-                          height: 22
-                        }}
-                      />
-                    }
-                  />
-                  
-                  <ListItemSecondaryAction>
-                    {requestSentUsers.includes(user.id) ? (
-                      <span>
-                        <Button 
-                          variant="outlined"
-                          color="info"
-                          startIcon={<AccessTimeIcon sx={{ display: { xs: 'none', sm: 'block' } }} />}
-                          disabled={true}
-                          size="small"
-                          sx={{ 
-                            borderRadius: 1.5,
-                            minWidth: { xs: '36px', sm: '140px' },
-                            px: { xs: 1, sm: 2 }
-                          }}
-                        >
-                          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>İstək Göndərildi</Box>
-                          <AccessTimeIcon sx={{ display: { xs: 'block', sm: 'none' }, fontSize: 20 }} />
-                        </Button>
-                      </span>
-                    ) : (
-                      <Button 
-                        variant="contained"
-                        color="primary"
-                        startIcon={<PersonAddIcon sx={{ display: { xs: 'none', sm: 'block' } }} />}
-                        onClick={() => handleSendRequest(user.id)}
-                        size="small"
-                        sx={{ 
-                          borderRadius: 1.5,
-                          minWidth: { xs: '36px', sm: '140px' },
-                          px: { xs: 1, sm: 2 }
-                        }}
-                      >
-                        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>Dost Əlavə Et</Box>
-                        <PersonAddIcon sx={{ display: { xs: 'block', sm: 'none' }, fontSize: 20 }} />
-                      </Button>
-                    )}
-                  </ListItemSecondaryAction>
-                </ListItem>
+                  </Box>
+                </Box>
                 
-                {index < searchResults.length - 1 && (
-                  <Divider component="li" />
-                )}
-              </React.Fragment>
-            ))}
-          </List>
-        </Paper>
+                <Box sx={{ p: 2, mt: 'auto' }}>
+                  {requestSentUsers.includes(user.id) ? (
+                    <Button 
+                      variant="outlined"
+                      color="info"
+                      fullWidth
+                      startIcon={<AccessTimeIcon />}
+                      disabled={true}
+                      size="small"
+                      sx={{ 
+                        borderRadius: 1.5,
+                      }}
+                    >
+                      İstək Göndərildi
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      startIcon={<PersonAddIcon />}
+                      onClick={() => handleSendRequest(user.id)}
+                      size="small"
+                      sx={{ 
+                        borderRadius: 1.5,
+                      }}
+                    >
+                      Dost Əlavə Et
+                    </Button>
+                  )}
+                </Box>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   };
 
+  // Kullanıcılar için son görülme zamanlarını yükleme
+  useEffect(() => {
+    if (isLoggedIn) {
+      // Tüm arkadaşlar için son görülme zamanlarını iste
+      friends.forEach(friend => {
+        if (!isUserOnline(friend.id)) {
+          requestUserLastSeen(friend.id);
+        }
+      });
+      
+      // Gelen istekler için gönderenlerin son görülme zamanlarını iste
+      incomingRequests.forEach(request => {
+        if (request.sender?.id && !isUserOnline(request.sender.id)) {
+          requestUserLastSeen(request.sender.id);
+        }
+      });
+      
+      // Giden istekler için alıcıların son görülme zamanlarını iste
+      outgoingRequests.forEach(request => {
+        if (request.receiver?.id && !isUserOnline(request.receiver.id)) {
+          requestUserLastSeen(request.receiver.id);
+        }
+      });
+    }
+  }, [isLoggedIn, friends, incomingRequests, outgoingRequests, isUserOnline, requestUserLastSeen]);
+
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 } }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 2, px: { xs: 2, sm: 0 } }}>
-        Dostlar
-      </Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        mb: 2, 
+        px: { xs: 1, sm: 0 }
+      }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          sx={{ 
+            fontSize: { xs: '1.75rem', sm: '2.25rem' },
+            fontWeight: 600 
+          }}
+        >
+          Dostlar
+        </Typography>
+        <Badge 
+          color="error" 
+          badgeContent={incomingRequests.length} 
+          max={99}
+          sx={{ 
+            '& .MuiBadge-badge': { 
+              fontSize: '0.75rem',
+              height: 18,
+              minWidth: 18,
+              padding: '0 4px'
+            }
+          }}
+        >
+          <Person />
+        </Badge>
+      </Box>
       
-      <Paper 
-        elevation={3} 
+      <Card 
+        elevation={2} 
         sx={{ 
           borderRadius: 2,
           overflow: 'hidden',
           background: darkMode 
-            ? alpha(theme.palette.background.paper, 0.8)
-            : alpha(theme.palette.background.paper, 0.7),
+            ? alpha(theme.palette.background.paper, 0.7)
+            : alpha(theme.palette.background.paper, 0.9),
           backdropFilter: 'blur(10px)',
-          mx: { xs: 2, sm: 0 }
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          mx: { xs: 0.5, sm: 0 }
         }}
       >
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
-            aria-label="dostluq səkmələri"
-            sx={{
-              '& .MuiTab-root': {
-                py: 2,
-                px: 2,
-                fontWeight: 600,
-                transition: 'all 0.3s ease',
-                minHeight: { xs: '48px', sm: '56px' },
-                fontSize: { xs: '0.775rem', sm: '0.875rem' },
-                '&:hover': {
-                  opacity: 0.8,
-                }
-              },
-              '& .Mui-selected': {
-                color: theme.palette.primary.main,
-              },
-              '& .MuiTabs-indicator': {
-                height: 3,
-                borderRadius: '3px 3px 0 0',
-              },
-              '& .MuiTabs-scrollButtons': {
-                color: theme.palette.primary.main,
-                '&.Mui-disabled': {
-                  opacity: 0.3,
-                }
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="dostluq səkmələri"
+          sx={{
+            borderBottom: 1, 
+            borderColor: 'divider',
+            '& .MuiTab-root': {
+              py: 2,
+              px: { xs: 1.5, sm: 2 },
+              fontWeight: 600,
+              transition: 'all 0.3s ease',
+              minHeight: { xs: '48px', sm: '56px' },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              minWidth: { xs: '60px', sm: 'auto' },
+              '&:hover': {
+                opacity: 0.8,
               }
+            },
+            '& .Mui-selected': {
+              color: theme.palette.primary.main,
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+            },
+            '& .MuiTabs-scrollButtons': {
+              color: theme.palette.primary.main,
+              '&.Mui-disabled': {
+                opacity: 0.3,
+              }
+            }
+          }}
+        >
+          <Tab 
+            icon={<Person fontSize="small" />} 
+            iconPosition="start"
+            label={isMobile ? `(${friends.length})` : `Dostlarım (${friends.length})`} 
+          />
+          <Tab 
+            icon={<EmailIcon fontSize="small" />}
+            iconPosition="start"
+            label={isMobile ? `(${incomingRequests.length})` : `Gələn (${incomingRequests.length})`}
+            sx={{ 
+              ...(incomingRequests.length > 0 && {
+                '&::after': {
+                  content: '""',
+                  display: 'block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: theme.palette.error.main,
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                }
+              })
             }}
-          >
-            <Tab label={`Dostlarım (${friends.length})`} />
-            <Tab label={`Gələn (${incomingRequests.length})`} />
-            <Tab label={`Göndərilən (${outgoingRequests.length})`} />
-            <Tab label="Axtar" />
-          </Tabs>
-        </Box>
+          />
+          <Tab 
+            icon={<AccessTimeIcon fontSize="small" />}
+            iconPosition="start"
+            label={isMobile ? `(${outgoingRequests.length})` : `Göndərilən (${outgoingRequests.length})`} 
+          />
+          <Tab 
+            icon={<SearchIcon fontSize="small" />}
+            iconPosition="start"
+            label={isMobile ? "" : "Axtar"} 
+          />
+        </Tabs>
         
         {/* Dostlarım Paneli */}
         <TabPanel value={tabValue} index={0}>
@@ -784,88 +920,97 @@ const FriendsPage: React.FC = () => {
         
         {/* Kullanıcı Arama Paneli */}
         <TabPanel value={tabValue} index={3}>
-          <Box sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="İstifadəçi adı axtar..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: darkMode 
-                    ? alpha(theme.palette.background.default, 0.5)
-                    : alpha('#fff', 0.9),
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: theme.palette.primary.main,
-                  },
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    {!searchQuery.trim() || isSearching ? (
-                      <span>
-                        <Button 
-                          variant="contained" 
-                          color="primary"
-                          disabled={true}
-                          sx={{ 
-                            borderRadius: 1.5, 
-                            px: 2,
-                            minWidth: '80px',
-                            height: '36px'
-                          }}
-                        >
-                          {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Axtar'}
-                        </Button>
-                      </span>
-                    ) : (
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        onClick={handleSearch}
-                        sx={{ 
-                          borderRadius: 1.5, 
-                          px: 2,
-                          minWidth: '80px',
-                          height: '36px'
-                        }}
-                      >
-                        Axtar
-                      </Button>
-                    )}
-                  </InputAdornment>
-                )
-              }}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
-                  handleSearch();
-                }
-              }}
-            />
-          </Box>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="İstifadəçi adı axtar..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: darkMode 
+                  ? alpha(theme.palette.background.default, 0.5)
+                  : alpha('#fff', 0.9),
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.primary.main,
+                },
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)'
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  {!searchQuery.trim() || isSearching ? (
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      disabled={true}
+                      sx={{ 
+                        borderRadius: 1.5, 
+                        px: 2,
+                        minWidth: '80px',
+                        height: '36px'
+                      }}
+                    >
+                      {isSearching ? <CircularProgress size={24} color="inherit" /> : 'Axtar'}
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="contained" 
+                      color="primary"
+                      onClick={handleSearch}
+                      sx={{ 
+                        borderRadius: 1.5, 
+                        px: 2,
+                        minWidth: '80px',
+                        height: '36px'
+                      }}
+                    >
+                      Axtar
+                    </Button>
+                  )}
+                </InputAdornment>
+              )
+            }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                handleSearch();
+              }
+            }}
+          />
           
           {renderSearchResults()}
           
           {!searchQuery && (
-            <Box textAlign="center" py={4}>
+            <Box 
+              textAlign="center" 
+              py={4} 
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1,
+                opacity: 0.8
+              }}
+            >
+              <SearchIcon color="disabled" sx={{ fontSize: 40, opacity: 0.7, mb: 1 }} />
               <Typography variant="body1" color="text.secondary">
                 İstifadəçi tapmaq üçün yuxarıdakı axtarış qutusundan istifadə edin
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, opacity: 0.7 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.7 }}>
                 Ən azı 2 hərf daxil edin
               </Typography>
             </Box>
           )}
         </TabPanel>
-      </Paper>
+      </Card>
     </Container>
   );
 };

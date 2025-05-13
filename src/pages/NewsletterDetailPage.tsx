@@ -244,11 +244,11 @@ const NewsletterDetailPage = () => {
                   right: 0,
                   bgcolor: theme.palette.error.main,
                   color: '#fff',
-                  px: { xs: 2, md: 3 },
-                  py: 0.8,
+                  px: { xs: 1.5, sm: 2, md: 3 },
+                  py: { xs: 0.6, md: 0.8 },
                   borderBottomLeftRadius: 12,
                   fontWeight: 'bold',
-                  fontSize: { xs: '0.8rem', md: '0.9rem' },
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
                   zIndex: 10,
                   boxShadow: `0 2px 8px ${alpha(theme.palette.error.main, 0.5)}`,
                   textTransform: 'uppercase',
@@ -264,9 +264,9 @@ const NewsletterDetailPage = () => {
                 background: darkMode ? 
                   `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.15)} 0%, ${alpha(theme.palette.background.paper, 0.1)} 100%)` :
                   `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.2)} 0%, ${alpha(theme.palette.background.paper, 0.02)} 100%)`,
-                pt: { xs: 3, md: 4 },
-                pb: { xs: 2, md: 3 },
-                px: { xs: 2, sm: 3, md: 4 },
+                pt: { xs: 2, sm: 2.5, md: 4 },
+                pb: { xs: 1.5, sm: 2, md: 3 },
+                px: { xs: 1.5, sm: 2, md: 4 },
                 borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`
               }}
             >
@@ -274,16 +274,17 @@ const NewsletterDetailPage = () => {
                 variant="h3" 
                 component="h1"
                 sx={{ 
-                  fontWeight: 700,
-                  fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
+                  fontWeight: 600,
+                  fontSize: { xs: '1.3rem', sm: '1.6rem', md: '2.2rem' },
                   color: is_important 
                     ? theme.palette.error.main 
                     : theme.palette.text.primary,
-                  mb: 2,
-                  lineHeight: 1.3,
+                  mb: { xs: 3, md: 4 },
+                  lineHeight: 1.2,
                   textShadow: darkMode ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
                   position: 'relative',
                   display: 'inline-block',
+                  letterSpacing: { xs: '-0.02em', md: '-0.01em' },
                   '&::after': is_important ? {
                     content: '""',
                     position: 'absolute',
@@ -311,42 +312,42 @@ const NewsletterDetailPage = () => {
               <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: 1, 
-                mb: 2,
+                gap: { xs: 0.8, md: 1 }, 
+                mb: { xs: 1.5, md: 2 },
                 flexWrap: 'wrap',
               }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                   <Avatar 
                     src={author?.avatar_url} 
                     alt={author?.username} 
-                    sx={{ width: 32, height: 32 }}
+                    sx={{ width: { xs: 28, md: 32 }, height: { xs: 28, md: 32 } }}
                   >
                     {author?.username ? author.username.charAt(0).toUpperCase() : 'S'}
                   </Avatar>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.85rem', md: '0.9rem' } }}>
                     {author?.username}
                   </Typography>
                 </Box>
                 <Divider orientation="vertical" flexItem />
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: { xs: '0.8rem', md: '0.85rem' } }}>
                   {formatDate(created_at)}
                 </Typography>
                 <Divider orientation="vertical" flexItem />
                 <Tooltip title="Görüntülenme sayısı">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                     <Avatar
                       sx={{
-                        width: 26,
-                        height: 26,
+                        width: { xs: 22, md: 26 },
+                        height: { xs: 22, md: 26 },
                         bgcolor: alpha(theme.palette.success.main, 0.1),
                         color: theme.palette.success.main,
                       }}
                     >
-                      <VisibilityIcon sx={{ fontSize: 16 }} />
+                      <VisibilityIcon sx={{ fontSize: { xs: 14, md: 16 } }} />
                     </Avatar>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 500 }}
+                      sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: '0.85rem' } }}
                     >
                       {state.newsletter.view_count || 0}
                     </Typography>
@@ -357,8 +358,8 @@ const NewsletterDetailPage = () => {
             
             <CardContent 
               sx={{ 
-                p: { xs: 2, sm: 3, md: 4 },
-                '&:last-child': { pb: { xs: 3, sm: 4 } } 
+                p: { xs: 1.5, sm: 2, md: 4 },
+                '&:last-child': { pb: { xs: 2, sm: 3, md: 4 } } 
               }}
             >
               <Box
@@ -366,41 +367,41 @@ const NewsletterDetailPage = () => {
                 sx={{
                   px: { xs: 0, md: 1 },
                   color: theme.palette.text.primary,
-                  fontSize: { xs: '1rem', md: '1.05rem' },
-                  lineHeight: 1.8,
+                  fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1.05rem' },
+                  lineHeight: { xs: 1.6, sm: 1.7, md: 1.8 },
                   wordBreak: 'break-word',
                   '& img': {
                     maxWidth: '100%',
                     height: 'auto',
                     borderRadius: 1,
-                    my: 2,
+                    my: { xs: 1.5, md: 2 },
                     boxShadow: `0 3px 8px ${alpha(theme.palette.common.black, 0.1)}`,
                   },
                   '& p': {
-                    mb: 2,
-                    lineHeight: 1.8,
+                    mb: { xs: 1.5, md: 2 },
+                    lineHeight: { xs: 1.6, sm: 1.7, md: 1.8 },
                   },
                   '& h1, & h2, & h3, & h4, & h5, & h6': {
-                    mt: { xs: 3, md: 4 },
-                    mb: 2,
+                    mt: { xs: 2.5, md: 4 },
+                    mb: { xs: 1.5, md: 2 },
                     fontWeight: 700,
                     fontFamily: "'Montserrat', sans-serif",
                     color: theme.palette.text.primary,
                     lineHeight: 1.3,
                   },
-                  '& h1': { fontSize: { xs: '1.8rem', md: '2.2rem' } },
-                  '& h2': { fontSize: { xs: '1.6rem', md: '1.8rem' } },
-                  '& h3': { fontSize: { xs: '1.4rem', md: '1.6rem' } },
-                  '& h4': { fontSize: { xs: '1.25rem', md: '1.4rem' } },
-                  '& h5': { fontSize: { xs: '1.1rem', md: '1.25rem' } },
-                  '& h6': { fontSize: { xs: '1rem', md: '1.1rem' } },
+                  '& h1': { fontSize: { xs: '1.5rem', sm: '1.7rem', md: '2.2rem' } },
+                  '& h2': { fontSize: { xs: '1.3rem', sm: '1.5rem', md: '1.8rem' } },
+                  '& h3': { fontSize: { xs: '1.2rem', sm: '1.3rem', md: '1.6rem' } },
+                  '& h4': { fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.4rem' } },
+                  '& h5': { fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' } },
+                  '& h6': { fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } },
                   '& ul, & ol': {
-                    pl: 3,
-                    mb: 3,
+                    pl: { xs: 2, md: 3 },
+                    mb: { xs: 2, md: 3 },
                   },
                   '& li': {
-                    mb: 1,
-                    pl: 1,
+                    mb: { xs: 0.7, md: 1 },
+                    pl: { xs: 0.5, md: 1 },
                   },
                   '& a': {
                     color: theme.palette.primary.main,
@@ -414,13 +415,14 @@ const NewsletterDetailPage = () => {
                   },
                   '& blockquote': {
                     borderLeft: `4px solid ${theme.palette.primary.main}`,
-                    pl: 3,
-                    py: 1,
-                    my: 3,
+                    pl: { xs: 2, md: 3 },
+                    py: { xs: 0.8, md: 1 },
+                    my: { xs: 2, md: 3 },
                     bgcolor: alpha(theme.palette.primary.main, 0.05),
                     borderRadius: 1,
                     fontStyle: 'italic',
                     boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    fontSize: { xs: '0.85rem', sm: '0.9rem', md: '1rem' }
                   },
                   '& code': {
                     bgcolor: alpha(theme.palette.grey[500], 0.2),
@@ -428,16 +430,16 @@ const NewsletterDetailPage = () => {
                     py: 0.5,
                     borderRadius: 1,
                     fontFamily: 'monospace',
-                    fontSize: '0.9em',
+                    fontSize: { xs: '0.8em', md: '0.9em' },
                   },
                   '& pre': {
                     bgcolor: alpha(theme.palette.grey[900], darkMode ? 0.2 : 0.1),
                     color: darkMode ? '#e0e0e0' : '#333333',
-                    p: 2,
+                    p: { xs: 1.5, md: 2 },
                     borderRadius: 1,
                     overflowX: 'auto',
                     fontFamily: 'monospace',
-                    fontSize: '0.9em',
+                    fontSize: { xs: '0.8em', md: '0.9em' },
                     boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.grey[500], 0.2)}`,
                   },
                   '& hr': {
@@ -449,12 +451,13 @@ const NewsletterDetailPage = () => {
                   '& table': {
                     width: '100%',
                     borderCollapse: 'collapse',
-                    my: 3,
+                    my: { xs: 2, md: 3 },
                     border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                    fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }
                   },
                   '& th, & td': {
                     border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                    p: 1.5,
+                    p: { xs: 1, md: 1.5 },
                     textAlign: 'left',
                   },
                   '& th': {
@@ -471,8 +474,8 @@ const NewsletterDetailPage = () => {
             sx={{ 
               display: 'flex', 
               justifyContent: 'center', 
-              mt: { xs: 3, md: 4 },
-              mb: { xs: 4, md: 6 },
+              mt: { xs: 2.5, md: 4 },
+              mb: { xs: 3, md: 6 },
             }}
           >
             <Button
@@ -482,9 +485,10 @@ const NewsletterDetailPage = () => {
               variant="contained"
               color="primary"
               sx={{ 
-                borderRadius: 8, 
-                px: 3,
-                py: 1.2,
+                borderRadius: 2, 
+                px: { xs: 2.5, md: 3 },
+                py: { xs: 1, md: 1.2 },
+                fontSize: { xs: '0.85rem', md: '0.9rem' },
                 boxShadow: theme.shadows[3],
                 transition: 'all 0.2s ease',
                 '&:hover': {
@@ -505,8 +509,8 @@ const NewsletterDetailPage = () => {
     <Container 
       maxWidth="lg" 
       sx={{ 
-        py: { xs: 3, md: 6 },
-        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 3, md: 6 },
+        px: { xs: 1.5, sm: 2, md: 4 },
       }}
     >
       {state.loading ? renderLoading() : 

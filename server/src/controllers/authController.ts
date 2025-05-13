@@ -132,28 +132,44 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'İstifadəçi adı və şifrə tələb olunur' });
     }
 
-    // Kullanıcıyı bul
+    // Kullanıcıyı bul - hem kullanıcı adı hem de email ile arama yap
     const client = getClient();
-    const { data: user, error: userError } = await client
+    
+    // Önce kullanıcı adına göre ara
+    let { data: user, error: userError } = await client
       .from(TABLES.USERS)
       .select('*')
       .eq('username', username)
       .maybeSingle();
 
-    if (userError) {
+    // Kullanıcı adıyla bulunamadıysa ve girilen değer email formatındaysa email olarak ara
+    if (!user && EMAIL_REGEX.test(username)) {
+      const { data: userByEmail, error: emailError } = await client
+        .from(TABLES.USERS)
+        .select('*')
+        .eq('email', username)
+        .maybeSingle();
+      
+      if (emailError) {
+        console.error('Email sorğu xətası:', emailError);
+        return res.status(500).json({ error: 'Verilənlər bazası sorğusunda xəta baş verdi' });
+      }
+      
+      user = userByEmail;
+    } else if (userError) {
       console.error('İstifadəçi sorğu xətası:', userError);
       return res.status(500).json({ error: 'Verilənlər bazası sorğusunda xəta baş verdi' });
     }
 
     if (!user) {
-      return res.status(401).json({ error: 'Yanlış istifadəçi adı və ya şifrə' });
+      return res.status(401).json({ error: 'Yanlış istifadəçi adı/email və ya şifrə' });
     }
 
     // Şifreyi doğrula
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Yanlış istifadəçi adı və ya şifrə' });
+      return res.status(401).json({ error: 'Yanlış istifadəçi adı/email və ya şifrə' });
     }
 
     // JWT token oluştur
