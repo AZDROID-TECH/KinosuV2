@@ -323,7 +323,7 @@ const SlideCaptcha: React.FC<SlideCaptchaProps> = ({ isOpen, onClose, onVerify }
         }}
       />
       
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" sx={{ fontWeight: 500, color: isDarkMode ? '#fff' : '#333' }}>
           Təhlükəsizlik Yoxlaması
         </Typography>

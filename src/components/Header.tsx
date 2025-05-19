@@ -294,6 +294,27 @@ const Header = () => {
             >
               <i className={`bx ${darkMode ? 'bxs-sun' : 'bxs-moon'}`} style={{ fontSize: '22px' }}></i>
             </IconButton>
+            {/* Mesajlaşma ikonu - masaüstü */}
+            {isLoggedIn && !isLoadingAuth && (
+              <IconButton
+                disabled
+                sx={{
+                  color: isSimpleHeader ? theme.palette.text.primary : '#fff',
+                  padding: '8px',
+                  opacity: 0.6,
+                  cursor: 'not-allowed',
+                  transition: 'transform 0.3s ease, color 0.3s ease',
+                  '&:hover': {
+                    transform: 'none',
+                    color: darkMode ? theme.palette.secondary.light : theme.palette.primary.light,
+                    bgcolor: 'transparent',
+                  }
+                }}
+                title="Mesajlar (tezliklə)"
+              >
+                <i className="bx bx-message-detail" style={{ fontSize: '22px' }}></i>
+              </IconButton>
+            )}
             
             {/* Newsletter ikonu */}
             {isLoggedIn && !isLoadingAuth && (

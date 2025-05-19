@@ -36,16 +36,9 @@ apiClient.interceptors.response.use(
         console.error('Token geçersiz veya süresi dolmuş:', error.response.data);
         
         // Eğer token geçersizse ve error.response.data içinde bir mesaj varsa onu kullanalım
-        const errorMessage = error.response.data.error || 'Sessiyanın müddəti bitib, yenidən daxil olun';
-        
-        // Kullanıcı oturumunu sonlandır
         localStorage.removeItem('token');
-        
-        // Kullanıcıyı login sayfasına yönlendir 
-        // Direk navigate kullanamadığımız için window.location kullanıyoruz
         window.location.href = '/login?expired=true';
-        
-        return Promise.reject(errorMessage);
+        return Promise.reject('Sessiyanız müddəti bitib. Zəhmət olmasa yenidən daxil olun.');
       }
       
       // Diğer hatalar için normal işleme devam et

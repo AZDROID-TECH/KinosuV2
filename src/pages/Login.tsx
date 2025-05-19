@@ -34,6 +34,7 @@ const Login = () => {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -99,6 +100,7 @@ const Login = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await login(formData.username, formData.password);
       if (!tokenExpired) {
@@ -134,6 +136,8 @@ const Login = () => {
       }
       // Hata durumunda da captcha'yı sıfırla
       resetCaptcha();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -187,6 +191,7 @@ const Login = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await login(formData.username, formData.password);
       if (!tokenExpired) {
@@ -222,8 +227,23 @@ const Login = () => {
       }
       // Hata durumunda da captcha'yı sıfırla
       resetCaptcha();
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (isSubmitting) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDarkMode ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' : 'linear-gradient(135deg, #e8eaf6 0%, #c5cae9 50%, #9fa8da 100%)' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <i className='bx bx-loader-alt bx-spin' style={{ fontSize: 48, color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
+          <Typography variant="h6" sx={{ mt: 2, color: isDarkMode ? '#fff' : '#3f51b5', fontWeight: 600 }}>
+            Giriş yoxlanılır...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <>
