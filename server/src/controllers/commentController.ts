@@ -272,7 +272,6 @@ export const voteComment = async (req: Request, res: Response) => {
 export const getPendingComments = async (req: Request, res: Response) => {
   try {
     const client = getClient();
-    const OMDB_API_KEY = process.env.VITE_OMDB_API_KEY || "YOUR_OMDB_API_KEY"; // API Anahtarını al
     
     // Gözləyən şərhləri gətir - users tablosundan yazar adı və avatarını da al
     const { data: comments, error } = await client
@@ -292,31 +291,7 @@ export const getPendingComments = async (req: Request, res: Response) => {
        throw error;
     }
     
-    // Film başlıklarını almak için OMDb API çağrıları (performansa dikkat!)
-    if (comments && comments.length > 0 && OMDB_API_KEY !== "YOUR_OMDB_API_KEY") {
-        const movieTitlePromises = comments.map(async (comment) => {
-            try {
-                 const omdbRes = await axios.get(`https://www.omdbapi.com/?i=${comment.movie_imdb_id}&apikey=${OMDB_API_KEY}`);
-                 if (omdbRes.data && omdbRes.data.Response === "True") {
-                     return { ...comment, movieTitle: omdbRes.data.Title };
-                 } else {
-                    console.warn(`OMDb xətası (${comment.movie_imdb_id}): ${omdbRes.data.Error}`);
-                    return { ...comment, movieTitle: null }; // Başlık alınamadı
-                 }
-            } catch (omdbError: any) {
-                 console.error(`OMDb API çağırışı xətası (${comment.movie_imdb_id}):`, omdbError.message);
-                 return { ...comment, movieTitle: null }; // Başlık alınamadı
-            }
-        });
-        
-        const commentsWithTitles = await Promise.all(movieTitlePromises);
-        return res.status(200).json(commentsWithTitles || []);
-    } else {
-        if (OMDB_API_KEY === "YOUR_OMDB_API_KEY") {
-            console.warn("OMDb API Anahtarı konfiqurasiya edilmədiyi üçün film başlıqları çəkilə bilmir.");
-        }
-        return res.status(200).json(comments || []); // Başlıklar olmadan döndür
-    }
+    return res.status(200).json(comments || []); // Başlıklar olmadan döndür
 
   } catch (error: any) {
     console.error('Gözləyən şərhləri gətirmə xətası (Genel):', error.message);

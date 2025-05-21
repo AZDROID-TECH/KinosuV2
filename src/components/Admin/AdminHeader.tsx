@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext'; // Auth contextini istifad�
 import { useTheme as useAppTheme } from '../../context/ThemeContext'; // ThemeContext'i əlavə et
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import StatusAvatar from '../Common/StatusAvatar'; // StatusAvatar bileşenini import et
-import { useOnlineStatus } from '../../context/OnlineStatusContext'; // OnlineStatus context'ini import et
+import { useSocketContext } from '../../context/SocketContext';
 
 // Path-lərə uyğun başlıqları təyin edək
 const pageTitles: Record<string, string> = {
@@ -42,7 +42,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
     const location = useLocation(); // <-- Location hook
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
-    const { isUserOnline } = useOnlineStatus(); // OnlineStatus context'inden isUserOnline fonksiyonunu al
+    const { isUserOnline } = useSocketContext();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

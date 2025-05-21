@@ -21,7 +21,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import StatusAvatar from './Common/StatusAvatar';
 import { useFriends } from '../context/FriendContext';
-import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { useSocketContext } from '../context/SocketContext';
 
 /**
  * @az Mobil Alt Menü
@@ -33,7 +33,7 @@ const MobileBottomMenu: React.FC = () => {
   const location = useLocation();
   const { isLoggedIn, avatar, userId, username, logout, isAdmin } = useAuth();
   const { requestsCount } = useFriends();
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline } = useSocketContext();
   
   // Profil modali için state
   const [profileModalOpen, setProfileModalOpen] = useState(false);

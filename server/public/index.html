@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="description" content="Kinosu - Sosial Film Platforması" />
   <meta name="theme-color" content="#673ab7" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -16,9 +16,26 @@
     html {
       touch-action: manipulation;
     }
+
+    body {
+      overscroll-behavior: none;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      font-size: 16px;
+      /* 16px ve üzeri boyutlar mobil tarayıcılarda zoom'u tetiklemez */
+    }
+
+    .slide-captcha-container {
+      touch-action: none;
+      -ms-touch-action: none;
+    }
   </style>
-  <script type="module" crossorigin src="/assets/index-BUcdUimO.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-nL3sjDbl.css">
+  <script type="module" crossorigin src="/assets/index-DxgIFdvn.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CMSeeTNm.css">
 </head>
 
 <body>

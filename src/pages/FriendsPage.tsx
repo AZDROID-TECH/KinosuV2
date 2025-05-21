@@ -44,7 +44,7 @@ import { useTheme as useCustomTheme } from '../context/ThemeContext';
 import { apiClient } from '../services/apiClient';
 import { showErrorToast, showInfoToast } from '../utils/toastHelper';
 import StatusAvatar from '../components/Common/StatusAvatar';
-import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { useSocketContext } from '../context/SocketContext';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -85,7 +85,7 @@ const FriendsPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<Array<{id: number, username: string, avatar_url: string | null}>>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [requestSentUsers, setRequestSentUsers] = useState<number[]>([]);
-  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useOnlineStatus();
+  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useSocketContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const { 

@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
-// import fs from 'fs'; // Yerli fayl sistemi modulu artıq lazım deyil
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 import { TABLES, getClient } from '../utils/supabase';
-import bcrypt from 'bcryptjs'; // bcryptjs kitabxanasını import et
+import bcrypt from 'bcryptjs';
 
 // .env faylını yüklə
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -27,89 +26,62 @@ interface WatchlistRecord {
   count: number;
 }
 
-// const UPLOADS_DIR = path.join(__dirname, '../../uploads/avatars'); // Yerli qovluq artıq lazım deyil
+// Avatar silme yardımcı fonksiyonu
+async function removeAvatarFromStorage(client: any, avatarUrl: string | null) {
+  if (avatarUrl && SUPABASE_PROJECT_URL && avatarUrl.startsWith(SUPABASE_PROJECT_URL)) {
+    try {
+      const urlObject = new URL(avatarUrl);
+      const storagePath = urlObject.pathname.split(`/storage/v1/object/public/avatars/`)[1];
+      if (storagePath) {
+        await client.storage.from('avatars').remove([storagePath]);
+      }
+    } catch {}
+  }
+}
 
-// Yerli qovluq yaratma kodu artıq lazım deyil
-// if (!fs.existsSync(UPLOADS_DIR)) {
-//   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-// }
-
-// cleanupUnusedAvatars funksiyası və setInterval artıq lazım deyil
-// const cleanupUnusedAvatars = async () => { ... };
-// setInterval(cleanupUnusedAvatars, 24 * 60 * 60 * 1000);
+// Kullanıcı film istatistiklerini getiren yardımcı fonksiyon
+async function getUserMovieStats(client: any, userId: number) {
+  const statuses = ['watchlist', 'watching', 'watched'];
+  const stats: Record<string, number> = {};
+  for (const status of statuses) {
+    const { count } = await client
+      .from(TABLES.MOVIES)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', status);
+    stats[status] = count ?? 0;
+  }
+  return stats;
+}
 
 // Profil bilgilerini getir
 export const getProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ error: 'Authentication required' });
-    
-    // Kullanıcı bilgilerini Supabase'den çek (avatar -> avatar_url)
-    const { data: user, error: userError } = await getClient()
+    const client = getClient();
+    const { data: user, error: userError } = await client
       .from(TABLES.USERS)
-      .select('id, username, email, avatar_url, created_at, is_admin') // is_admin eklendi
+      .select('id, username, email, avatar_url, created_at, is_admin')
       .eq('id', userId)
       .single();
-    
     if (userError) {
       console.error('İstifadəçi sorğu xətası:', userError);
       return res.status(500).json({ error: 'Verilənlər bazası sorğusunda xəta baş verdi' });
     }
-    
     if (!user) {
       return res.status(404).json({ error: 'İstifadəçi tapılmadı' });
     }
-    
-    // İzleme listesi istatistiklerini al
-    // Watchlist (İzleme Listesi)
-    const { count: watchlistCount, error: watchlistError } = await getClient()
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'watchlist');
-    
-    if (watchlistError) {
-      console.error('Watchlist sorğu xətası:', watchlistError);
-      // Hata durumunda bile devam et, varsayılan 0 dönecek
-    }
-    
-    // Watching (İzleniyor)
-    const { count: watchingCount, error: watchingError } = await getClient()
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'watching');
-    
-    if (watchingError) {
-      console.error('Watching sorğu xətası:', watchingError);
-    }
-    
-    // Watched (İzlendi)
-    const { count: watchedCount, error: watchedError } = await getClient()
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'watched');
-    
-    if (watchedError) {
-      console.error('Watched sorğu xətası:', watchedError);
-    }
-    
-    // created_at yoksa şu anki zamanı kullan
+    const stats = await getUserMovieStats(client, userId);
     const createdAt = user.created_at || new Date().toISOString();
-    
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
-      avatar_url: user.avatar_url, // AuthContext'in beklediği isim
+      avatar_url: user.avatar_url,
       createdAt: createdAt,
-      isAdmin: user.is_admin, // isAdmin eklendi
-      watchlist: {
-        watchlist: watchlistCount ?? 0,
-        watching: watchingCount ?? 0,
-        watched: watchedCount ?? 0
-      }
+      isAdmin: user.is_admin,
+      watchlist: stats
     });
   } catch (error) {
     console.error('Profil məlumatları alınarkən xəta:', error);
@@ -144,22 +116,7 @@ export const uploadAvatar = async (req: Request, res: Response) => {
     }
     
     // 2. Mövcud avatarı Supabase Storage-dan sil (əgər varsa və etibarlı Supabase URL isə)
-    if (user.avatar_url && SUPABASE_PROJECT_URL && user.avatar_url.startsWith(SUPABASE_PROJECT_URL)) {
-      try {
-        const urlObject = new URL(user.avatar_url);
-        const storagePath = urlObject.pathname.split(`/storage/v1/object/public/avatars/`)[1];
-        if (storagePath) {
-           const { error: deleteError } = await client.storage
-            .from('avatars')
-            .remove([storagePath]);
-          if (deleteError) {
-            console.error('Köhnə avatarı Supabase Storage-dan silərkən xəta:', deleteError);
-          }
-        }
-      } catch (urlParseOrDeleteError) {
-          console.error("Köhnə avatar URL-ni parse edərkən və ya silərkən xəta:", urlParseOrDeleteError);
-      }
-    }
+    await removeAvatarFromStorage(client, user.avatar_url);
 
     // 3. Yeni fayl adını yarat (uuid + fayl uzantısı)
     const fileExtension = path.extname(req.file.originalname);
@@ -239,48 +196,20 @@ export const deleteAvatar = async (req: Request, res: Response) => {
     }
     
     // 2. Avatar URL-i varsa və etibarlı Supabase URL isə Storage-dan sil
-    if (user.avatar_url && SUPABASE_PROJECT_URL && user.avatar_url.startsWith(SUPABASE_PROJECT_URL)) {
-       try {
-           const urlObject = new URL(user.avatar_url);
-           const storagePath = urlObject.pathname.split(`/storage/v1/object/public/avatars/`)[1];
-           if (storagePath) {
-               const { error: deleteError } = await client.storage
-                .from('avatars')
-                .remove([storagePath]); 
-               if (deleteError) {
-                 console.error('Avatarı Supabase Storage-dan silərkən xəta:', deleteError);
-               }
-           }
-        } catch (urlParseOrDeleteError) {
-          console.error("Avatar URL-ni parse edərkən və ya silərkən xəta:", urlParseOrDeleteError);
-        }
-      // 3. Veritabanını yenilə (avatar_url = null) - Silmə xətası olsa belə DB yenilənsin
-      const { error: updateError } = await client
-        .from(TABLES.USERS)
-        .update({ avatar_url: null })
-        .eq('id', userId);
-      
-      if (updateError) {
-        console.error('Avatar URL-ni verilənlər bazasında silmə xətası:', updateError);
-        return res.status(500).json({ error: 'Avatar URL-ni silmə zamanı xəta baş verdi' });
-      }
-      
-       res.json({ success: true, avatar: null });
+    await removeAvatarFromStorage(client, user.avatar_url);
 
-    } else {
-        // DB-də URL yoxdursa və ya Supabase URL deyilsə, DB-ni null olaraq yeniləyək
-        if (user.avatar_url !== null) {
-             const { error: updateError } = await client
-                .from(TABLES.USERS)
-                .update({ avatar_url: null })
-                .eq('id', userId);
-            if (updateError) {
-                console.error('Avatar URL-ni null olaraq yeniləmə xətası:', updateError);
-                return res.status(500).json({ error: 'Avatar məlumatını təmizləmə zamanı xəta baş verdi' });
-            }
-        }
-       res.json({ success: true, message: 'Silinəcək etibarlı avatar yoxdur.', avatar: null });
+    // 3. Veritabanını yenilə (avatar_url = null) - Silmə xətası olsa belə DB yenilənsin
+    const { error: updateError } = await client
+      .from(TABLES.USERS)
+      .update({ avatar_url: null })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Avatar URL-ni verilənlər bazasında silmə xətası:', updateError);
+      return res.status(500).json({ error: 'Avatar URL-ni silmə zamanı xəta baş verdi' });
     }
+    
+       res.json({ success: true, avatar: null });
 
   } catch (error) {
     console.error('Avatar silmə prosesində ümumi xəta:', error);
@@ -359,10 +288,6 @@ interface UserWithCommentCount extends UserForAdmin {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const client = getClient();
-    
-    // Bütün istifadəçiləri və onların şərh saylarını gətir
-    // Şərh sayını almaq üçün birbaşa select ilə RPC və ya view istifadə etmək daha performanslı ola bilər,
-    // amma şimdilik subquery ilə edək.
     const { data: users, error } = await client
       .from(TABLES.USERS)
       .select(`
@@ -375,21 +300,15 @@ export const getAllUsers = async (req: Request, res: Response) => {
         comment_count:comments(count)
       `)
       .order('id', { ascending: true }); 
-      
     if (error) {
       console.error('Bütün istifadəçiləri gətirərkən xəta:', error);
       return res.status(500).json({ error: 'İstifadəçi siyahısı alınarkən verilənlər bazası xətası baş verdi' });
     }
-    
-    // Frontend'in gözlədiyi formata çevirmək lazım ola bilər
-    // Məsələn, `comment_count` massiv olaraq gəlirsə [{count: X}] onu saya çevirmək
     const formattedUsers = users?.map(user => ({
       ...user,
       comment_count: Array.isArray(user.comment_count) ? user.comment_count[0]?.count ?? 0 : 0
     })) || [];
-    
     res.json(formattedUsers);
-
   } catch (error) {
     console.error('Bütün istifadəçiləri gətirmə zamanı ümumi xəta:', error);
     res.status(500).json({ error: 'İstifadəçi siyahısı alınarkən gözlənilməz server xətası baş verdi' });
@@ -533,24 +452,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
 
     // Supabase Storage-dan istifadəçinin avatar şəkilini sil (əgər varsa)
-    if (targetUser.avatar_url && SUPABASE_PROJECT_URL && targetUser.avatar_url.startsWith(SUPABASE_PROJECT_URL)) {
-      try {
-        const urlObject = new URL(targetUser.avatar_url);
-        const storagePath = urlObject.pathname.split(`/storage/v1/object/public/avatars/`)[1];
-        if (storagePath) {
-          const { error: deleteAvatarError } = await client.storage
-            .from('avatars')
-            .remove([storagePath]);
-          if (deleteAvatarError) {
-            console.error('Silinən istifadəçinin avatarını silmə xətası:', deleteAvatarError);
-            // Avatar silmə xətası istifadəçi silməyi dayandırmasın 
-          }
-        }
-      } catch (urlParseOrDeleteError) {
-        console.error("Avatar URL-ni parse edərkən və ya silərkən xəta:", urlParseOrDeleteError);
-        // Davam et - bu istifadəçi silməyi bloklamamalıdır
-      }
-    }
+    await removeAvatarFromStorage(client, targetUser.avatar_url);
 
     // İstifadəçinin bütün filmləri (varsa) MOVIES cədvəlindən silinməli
     const { error: deleteMoviesError } = await client
@@ -619,38 +521,8 @@ export const getPublicProfile = async (req: Request, res: Response) => {
     // İzleme listesi istatistiklerini al
     const userProfileId = user.id;
     
-    // Watchlist (İzleme Listesi)
-    const { count: watchlistCount, error: watchlistError } = await client
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userProfileId)
-      .eq('status', 'watchlist');
-    
-    if (watchlistError) {
-      console.error('Watchlist sorğu xətası:', watchlistError);
-    }
-    
-    // Watching (İzleniyor)
-    const { count: watchingCount, error: watchingError } = await client
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userProfileId)
-      .eq('status', 'watching');
-    
-    if (watchingError) {
-      console.error('Watching sorğu xətası:', watchingError);
-    }
-    
-    // Watched (İzlendi)
-    const { count: watchedCount, error: watchedError } = await client
-      .from(TABLES.MOVIES)
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userProfileId)
-      .eq('status', 'watched');
-    
-    if (watchedError) {
-      console.error('Watched sorğu xətası:', watchedError);
-    }
+    // Kullanıcı film istatistiklerini getir
+    const stats = await getUserMovieStats(client, userProfileId);
     
     // Son eklenen film
     const { data: latestMovie, error: latestMovieError } = await client
@@ -687,12 +559,7 @@ export const getPublicProfile = async (req: Request, res: Response) => {
       avatar: user.avatar_url,
       createdAt: createdAt,
       isOnline: false, // Veritabanında olmadığı için sabit değer verdik
-      stats: {
-        watchlist: watchlistCount ?? 0,
-        watching: watchingCount ?? 0,
-        watched: watchedCount ?? 0,
-        total: (watchlistCount ?? 0) + (watchingCount ?? 0) + (watchedCount ?? 0)
-      },
+      stats: stats,
       latestMovie: latestMovie || null,
       topRatedMovies: topRatedMovies || []
     });

@@ -118,20 +118,16 @@ const AppContent = () => {
 // Main App component
 function App() {
   return (
-    <Router>
-      <CustomThemeProvider>
-        <CssBaseline />
-        <AuthProvider>
-          <OnlineStatusProvider>
-            <FriendProvider>
-              <HeaderMenuProvider>
-                <AppContent />
-              </HeaderMenuProvider>
-            </FriendProvider>
-          </OnlineStatusProvider>
-        </AuthProvider>
-      </CustomThemeProvider>
-    </Router>
+    <CustomThemeProvider>
+      <CssBaseline />
+      <AuthProvider>
+        <FriendProvider>
+          <HeaderMenuProvider>
+            <AppContent />
+          </HeaderMenuProvider>
+        </FriendProvider>
+      </AuthProvider>
+    </CustomThemeProvider>
   );
 }
 

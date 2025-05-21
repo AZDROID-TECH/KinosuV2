@@ -129,14 +129,14 @@ export const initializeSocketServer = (server: HttpServer) => {
     
     // Periyodik olarak last_seen zamanını güncelleyecek interval
     const heartbeatInterval = setInterval(async () => {
-      // Kullanıcı hala onlineUserMap'de ise, last_seen zamanını güncelle
       if (onlineUserMap.has(userId) && onlineUserMap.get(userId)?.socketId === socket.id) {
         await updateLastSeen(userId);
       } else {
-        // Kullanıcı online değilse interval'ı temizle
         clearInterval(heartbeatInterval);
+        logger.warn(`Heartbeat interval cleared for user ${userId}`);
       }
-    }, 5 * 60 * 1000); // 5 dakikada bir güncelle
+    }, 5 * 60 * 1000);
+    logger.warn(`Heartbeat interval started for user ${userId}`);
     
     // Kullanıcı bağlandığında otomatik olarak online olarak işaretle
     onlineUserMap.set(userId, { 
@@ -224,24 +224,16 @@ export const initializeSocketServer = (server: HttpServer) => {
     
     // Bağlantı kesildi
     socket.on('disconnect', async (reason) => {
-      // Kullanıcının socket bilgisini kontrol et
       for (const [id, data] of onlineUserMap.entries()) {
         if (data.socketId === socket.id) {
           const lastSeen = new Date();
           logger.warn(`${id} ID'li kullanıcı bağlantısı kesildi. Sebep: ${reason}`);
-          
-          // Interval'ı temizle
           if (data.heartbeat) {
             clearInterval(data.heartbeat);
+            logger.warn(`Heartbeat interval cleared on disconnect for user ${id}`);
           }
-          
-          // Map'den kullanıcıyı çıkar
           onlineUserMap.delete(id);
-          
-          // Veritabanında son görülme zamanını güncelle
           await updateLastSeen(id, lastSeen);
-          
-          // Tüm istemcilere kullanıcının çevrimdışı olduğunu bildir
           io.emit('user:offline', { userId: id, lastSeen: lastSeen.toISOString() });
           io.emit('users:online', Array.from(onlineUserMap.keys()));
           break;

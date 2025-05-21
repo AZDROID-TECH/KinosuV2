@@ -63,9 +63,9 @@ const Login = () => {
     // }
     
     // Eğer token süresi dolmuşsa bildirim göster
-    if (tokenExpired) {
-      showErrorToast('Sessiyanız müddəti bitib. Zəhmət olmasa yenidən daxil olun.');
-    }
+    // if (tokenExpired) {
+    //   showErrorToast('Sessiyanız müddəti bitib. Zəhmət olmasa yenidən daxil olun.');
+    // }
   }, [tokenExpired]); // Bağımlılıklar güncellendi
 
   const handleSubmit = async (e: React.FormEvent) => {

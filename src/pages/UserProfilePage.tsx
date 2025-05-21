@@ -42,7 +42,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFriends, FriendshipStatusResponse } from '../context/FriendContext';
 import { showSuccessToast, showErrorToast } from '../utils/toastHelper';
 import StatusAvatar from '../components/Common/StatusAvatar';
-import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { useSocketContext } from '../context/SocketContext';
 
 // Online durumu için pulse animasyon
 const pulseAnimation = keyframes`
@@ -115,7 +115,7 @@ const UserProfilePage: React.FC = () => {
   const { darkMode } = useCustomTheme();
   const { isLoggedIn, userId: loggedInUserId } = useAuth();
   const { checkFriendshipStatus, sendFriendRequest, removeFriend } = useFriends();
-  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useOnlineStatus();
+  const { isUserOnline, lastSeen, formatLastSeen, requestUserLastSeen } = useSocketContext();
   
   const [profile, setProfile] = useState<PublicUserProfile | null>(null);
   const [loading, setLoading] = useState(true);

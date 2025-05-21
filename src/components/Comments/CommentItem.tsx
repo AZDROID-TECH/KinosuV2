@@ -11,7 +11,7 @@ import styles from './Comments.module.css';
 import CommentForm from './CommentForm'; // Yanıt formu için
 import ConfirmationDialog from '../Common/ConfirmationDialog'; // <-- Yeni Dialog import edildi
 import StatusAvatar from '../Common/StatusAvatar'; // StatusAvatar bileşenini import ediyoruz
-import { useOnlineStatus } from '../../context/OnlineStatusContext'; // OnlineStatus context'ini import et
+import { useSocketContext } from '../../context/SocketContext';
 
 interface CommentItemProps {
     comment: Comment;
@@ -30,7 +30,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, movieId, onVoteChang
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false); // <-- Dialog state'i
-    const { isUserOnline } = useOnlineStatus(); // OnlineStatus context'inden isUserOnline fonksiyonunu al
+    const { isUserOnline } = useSocketContext(); // OnlineStatus context'inden isUserOnline fonksiyonunu al
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

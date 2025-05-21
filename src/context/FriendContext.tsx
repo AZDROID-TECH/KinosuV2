@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { useSocketContext } from './SocketContext';
 import axios from 'axios';
 import { apiClient } from '../services/apiClient';
 import { showErrorToast, showSuccessToast } from '../utils/toastHelper';

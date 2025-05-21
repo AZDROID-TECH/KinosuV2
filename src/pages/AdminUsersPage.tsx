@@ -40,7 +40,7 @@ import { userAPI } from '../services/api';
 import { formatDate } from '../utils/movieHelpers';
 import UserCommentsModal from '../components/Admin/UserCommentsModal';
 import StatusAvatar from '../components/Common/StatusAvatar';
-import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { useSocketContext } from '../context/SocketContext';
 
 interface UserForAdmin {
   id: number;
@@ -236,7 +236,7 @@ const AdminUsersPage = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { isAdmin } = useAuth();
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline } = useSocketContext();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);

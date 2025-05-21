@@ -1,0 +1,1 @@
+import{a6 as r,a7 as a,a8 as t}from"./index-DxgIFdvn.js";var e={},u=r;Object.defineProperty(e,"__esModule",{value:!0});var o=e.default=void 0,s=u(a()),i=t();o=e.default=(0,s.default)((0,i.jsx)("path",{d:"M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"}),"Person");export{o as d};

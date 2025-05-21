@@ -25,7 +25,7 @@ import { useFriends } from '../context/FriendContext';
 import { useState, useEffect } from 'react';
 import 'boxicons/css/boxicons.min.css';
 import StatusAvatar from './Common/StatusAvatar';
-import { useOnlineStatus } from '../context/OnlineStatusContext';
+import { useSocketContext } from '../context/SocketContext';
 import { getLatestNewsletters, getUnreadCount, markNewsletterAsViewed, Newsletter } from '../services/newsletterService';
 import { format } from 'date-fns';
 import { apiClient } from '../services/apiClient';
@@ -42,7 +42,7 @@ const Header = () => {
   const location = useLocation();
   const { darkMode, toggleDarkMode } = useCustomTheme();
   const { isLoggedIn, username, avatar, logout, isLoadingAuth, isAdmin, userId } = useAuth();
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline } = useSocketContext();
   const { profileAnchorEl, openProfileMenu, closeProfileMenu, isProfileMenuOpen, menuOrigin } = useHeaderMenu();
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [newsletterAnchorEl, setNewsletterAnchorEl] = useState<null | HTMLElement>(null);

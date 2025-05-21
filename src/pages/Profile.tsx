@@ -337,14 +337,66 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Stack spacing={4} alignItems="center">
-          <Skeleton variant="circular" width={160} height={160} />
-          <Skeleton variant="text" width="40%" height={40} />
-          <Skeleton variant="text" width="60%" height={24} />
-          <Skeleton variant="rectangular" width="80%" height={100} sx={{ borderRadius: 2 }} />
-          <Skeleton variant="rectangular" width="80%" height={200} sx={{ borderRadius: 2 }} />
-        </Stack>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Grid container spacing={3}>
+          {/* Sol Panel: Avatar ve Bilgiler */}
+          <Grid item xs={12} md={5}>
+            <Paper 
+              elevation={0}
+              sx={{
+                width: '100%', 
+                p: 3,
+                borderRadius: 3,
+                textAlign: 'center',
+                background: darkMode ? alpha(muiTheme.palette.grey[900], 0.5) : alpha(muiTheme.palette.primary.light, 0.05),
+                border: `1px solid ${muiTheme.palette.divider}`,
+                position: 'relative',
+                height: '100%'
+              }}
+            >
+              <Stack spacing={2} alignItems="center">
+                <Skeleton variant="circular" width={160} height={160} />
+                <Skeleton variant="text" width="40%" height={40} />
+                <Skeleton variant="text" width="60%" height={24} />
+                <Skeleton variant="rectangular" width="60%" height={32} sx={{ borderRadius: 2 }} />
+              </Stack>
+            </Paper>
+          </Grid>
+          {/* Sağ Panel: Hesap Ayarları */}
+          <Grid item xs={12} md={7}>
+            <Paper elevation={0} sx={{ width: '100%', p: 2.5, borderRadius: 3, border: `1px solid ${muiTheme.palette.divider}`, height: '100%' }}>
+              <Skeleton variant="text" width="40%" height={32} sx={{ mb: 2 }} />
+              <Stack spacing={2}>
+                <Skeleton variant="rectangular" width="100%" height={48} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="rectangular" width="100%" height={48} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="rectangular" width="100%" height={48} sx={{ borderRadius: 2 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Skeleton variant="rectangular" width={140} height={40} sx={{ borderRadius: 2 }} />
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
+          {/* İstatistik Kutuları */}
+          <Grid item xs={12}>
+            <Paper elevation={0} sx={{ width: '100%', p: 2.5, borderRadius: 3, border: `1px solid ${muiTheme.palette.divider}` }}>
+              <Skeleton variant="text" width="30%" height={32} sx={{ mb: 2 }} />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} divider={<Divider orientation="vertical" flexItem />} justifyContent="space-around">
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton variant="text" width={60} height={40} sx={{ mx: 'auto' }} />
+                  <Skeleton variant="text" width={80} height={24} sx={{ mx: 'auto' }} />
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton variant="text" width={60} height={40} sx={{ mx: 'auto' }} />
+                  <Skeleton variant="text" width={80} height={24} sx={{ mx: 'auto' }} />
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Skeleton variant="text" width={60} height={40} sx={{ mx: 'auto' }} />
+                  <Skeleton variant="text" width={80} height={24} sx={{ mx: 'auto' }} />
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
       </Container>
     );
   }
