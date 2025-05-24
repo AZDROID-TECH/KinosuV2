@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getClient } from '../utils/supabase';
-import { isUserOnline, getUserLastSeen } from '../services/onlineStatusService';
+// import { isUserOnline, getUserLastSeen } from '../services/onlineStatusService'; // Silindi
+import { socketService } from '../services/socketService'; // Eklendi
 
 /**
  * Kullanıcının online durumunu ve son görülme zamanını al
@@ -27,10 +28,10 @@ export const getUserOnlineStatus = async (req: Request, res: Response) => {
     }
     
     // Online durumunu kontrol et
-    const online = isUserOnline(userIdNum);
+    const online = socketService.isUserOnline(userIdNum); // Güncellendi
     
     // Son görülme zamanını al
-    const lastSeen = await getUserLastSeen(userIdNum);
+    const lastSeen = await socketService.getUserLastSeen(userIdNum); // Güncellendi
     
     return res.status(200).json({
       userId: userIdNum,

@@ -16,7 +16,8 @@ import fs from 'fs';
 import { TABLES, getClient } from './utils/supabase';
 import { logger } from './utils/logger';
 import axios from 'axios';
-import { initializeSocketServer } from './services/onlineStatusService';
+// import { initializeSocketServer } from './services/onlineStatusService'; // Silindi
+import { socketService } from './services/socketService'; // Eklendi
 
 // .env faylını yüklə - main dotenv yüklemesi
 dotenv.config();
@@ -142,7 +143,8 @@ if (fs.existsSync(distPath)) {
 }
 
 // Socket.io server'ı başlat
-const io = initializeSocketServer(server);
+// const io = initializeSocketServer(server); // Silindi
+socketService.initialize(server); // Eklendi
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
