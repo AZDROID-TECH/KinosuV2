@@ -37,9 +37,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import dayjs from 'dayjs';
 import { formatDate } from '../utils/movieHelpers';
-
-// React Toastify importları
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from '../utils/toastHelper';
 
 // Resim Kırpma Modalı için gerekli bileşenler
 import Crop from 'react-easy-crop';
@@ -206,11 +204,11 @@ const Profile = () => {
       // Modalı kapat
       setOpenCropModal(false);
       setSelectedFile(null);
-      toast.success('Profil şəkli uğurla yeniləndi.');
+      showSuccessToast('Profil şəkli uğurla yeniləndi.');
     } catch (err) {
       console.error('Avatar yükləmə xətası:', err);
       setError('Avatar yükləmə zamanı xəta baş verdi');
-      toast.error('Avatar yüklənərkən xəta baş verdi.');
+      showErrorToast('Avatar yüklənərkən xəta baş verdi.');
     } finally {
       setAvatarLoading(false);
     }
@@ -218,90 +216,52 @@ const Profile = () => {
 
   // Avatar'ı sil (Custom Toast ilə)
   const deleteAvatar = async () => {
-    let confirmationToastId: ReturnType<typeof toast> | null = null; // Toast ID üçün tip
-    
+    let confirmationToastId: number | null = null;
+
     const performDelete = async () => {
-    try {
-      setAvatarLoading(true);
-      await userAPI.deleteAvatar();
-      updateAvatar(null);
-      await loadProfile();
-      await refreshProfile();
-        if (confirmationToastId) toast.dismiss(confirmationToastId);
-        toast.success('Avatar uğurla silindi.'); 
-    } catch (err) {
-      console.error('Avatar silmə xətası:', err);
-      setError('Avatar silmə zamanı xəta baş verdi');
-        toast.error('Avatar silinərkən xəta baş verdi.');
-    } finally {
-      setAvatarLoading(false);
-    }
-  };
-
-    const ConfirmationDialog = ({ closeToast }: { closeToast: () => void }) => (
-      <Box sx={{ p: 1 }}>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          Avatarınızı silmək istədiyinizə əminsinizmi?
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-          <Button 
-            size="small" 
-            variant="outlined" 
-            onClick={closeToast}
-            disabled={avatarLoading}
-          >
-            Xeyr
-          </Button>
-          <Button 
-            size="small" 
-            variant="contained" 
-            color="error" 
-            onClick={() => {
-              performDelete(); 
-            }}
-            disabled={avatarLoading}
-          >
-            {avatarLoading ? <CircularProgress size={20} color="inherit" /> : 'Bəli, Sil'}
-          </Button>
-        </Box>
-      </Box>
-    );
-
-    confirmationToastId = toast.warning(
-      ({ closeToast }) => <ConfirmationDialog closeToast={closeToast} />,
-      {
-        position: 'top-center',
-        autoClose: false,
-        closeOnClick: false,
-        draggable: false,
-        closeButton: false,
+      try {
+        setAvatarLoading(true);
+        await userAPI.deleteAvatar();
+        updateAvatar(null);
+        await loadProfile();
+        await refreshProfile();
+        showSuccessToast('Avatar uğurla silindi.');
+      } catch (err) {
+        console.error('Avatar silmə xətası:', err);
+        setError('Avatar silmə zamanı xəta baş verdi');
+        showErrorToast('Avatar silinərkən xəta baş verdi.');
+      } finally {
+        setAvatarLoading(false);
       }
-    );
+    };
+
+    // Custom confirmation toast (uyğun bir dialog ile)
+    // Burada react-toastify'nin custom dialogunu kaldırıyoruz, isterseniz modal ile özelleştirebilirsiniz.
+    if (window.confirm('Avatarınızı silmək istədiyinizə əminsinizmi?')) {
+      performDelete();
+    }
   };
 
   // Şifrə dəyişdirmə funksiyası
   const handleChangePassword = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // Formun default davranışını dayandır
+    event.preventDefault();
     setPasswordLoading(true);
-    setError(null); // Əvvəlki xətaları təmizlə
+    setError(null);
 
-    // Sahələrin boş olub olmadığını yoxla
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Bütün şifrə sahələrini doldurun.');
+      showErrorToast('Bütün şifrə sahələrini doldurun.');
       setPasswordLoading(false);
       return;
     }
 
-    // Yeni şifrələrin uyğunluğunu yoxla
     if (newPassword !== confirmPassword) {
-      toast.error('Yeni şifrələr uyğun gəlmir.');
+      showErrorToast('Yeni şifrələr uyğun gəlmir.');
       setPasswordLoading(false);
       return;
     }
 
-    // Zəif şifrə yoxlaması (məsələn, minimum uzunluq)
     if (newPassword.length < 6) {
-      toast.error('Yeni şifrə ən az 6 simvol olmalıdır.');
+      showErrorToast('Yeni şifrə ən az 6 simvol olmalıdır.');
       setPasswordLoading(false);
       return;
     }
@@ -311,16 +271,15 @@ const Profile = () => {
         currentPassword,
         newPassword,
       });
-      toast.success(response.message || 'Şifrə uğurla dəyişdirildi.');
-      // Sahələri təmizlə
+      showSuccessToast(response.message || 'Şifrə uğurla dəyişdirildi.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
       console.error('Şifrə dəyişdirmə xətası:', err);
       const errorMessage = err.error || 'Şifrə dəyişdirilərkən xəta baş verdi.';
-      setError(errorMessage); // Ümumi xəta mesajı üçün
-      toast.error(errorMessage);
+      setError(errorMessage);
+      showErrorToast(errorMessage);
     } finally {
       setPasswordLoading(false);
     }

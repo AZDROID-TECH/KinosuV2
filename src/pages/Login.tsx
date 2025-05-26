@@ -298,45 +298,45 @@ const Login = () => {
               elevation={0}
               sx={{
                 p: { xs: 2, sm: 3 },
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: '100%',
-                borderRadius: 3,
-                position: 'relative',
-                overflow: 'hidden',
-                backgroundColor: isDarkMode 
-                  ? alpha(theme.palette.background.paper, 0.7)
-                  : alpha('#ffffff', 0.7),
-                backdropFilter: 'blur(15px)',
-                boxShadow: isDarkMode
-                  ? '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
-                  : '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
-                border: isDarkMode
-                  ? '1px solid rgba(255, 255, 255, 0.1)'
-                  : '1px solid rgba(255, 255, 255, 0.7)',
-                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '100%',
+              borderRadius: 3,
+              position: 'relative',
+              overflow: 'hidden',
+              backgroundColor: isDarkMode 
+                ? alpha(theme.palette.background.paper, 0.7)
+                : alpha('#ffffff', 0.7),
+              backdropFilter: 'blur(15px)',
+              boxShadow: isDarkMode
+                ? '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
+                : '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5) inset',
+              border: isDarkMode
+                ? '1px solid rgba(255, 255, 255, 0.1)'
+                : '1px solid rgba(255, 255, 255, 0.7)',
+              transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
                 minHeight: { xs: 340, sm: 380 },
                 maxHeight: { xs: 480, sm: 520 },
                 justifyContent: 'center',
                 mt: { xs: 1, sm: 1 },
                 maxWidth: { xs: '100%', sm: '520px', md: '600px' },
-              }}
-            >
+            }}
+          >
               {/* Gradient bar */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
                   height: { xs: '3px', sm: '4px' },
-                  background: isDarkMode
-                    ? 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)'
-                    : 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)',
-                  backgroundSize: '200% 100%',
-                  animation: 'gradient 3s ease infinite',
-                  '@keyframes gradient': {
+                background: isDarkMode
+                  ? 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)'
+                  : 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)',
+                backgroundSize: '200% 100%',
+                animation: 'gradient 3s ease infinite',
+                '@keyframes gradient': {
                     '0%': { backgroundPosition: '0% 50%' },
                     '50%': { backgroundPosition: '100% 50%' },
                     '100%': { backgroundPosition: '0% 50%' },
@@ -349,384 +349,384 @@ const Login = () => {
               {/* Logo ve başlık */}
               <Box
                 sx={{
-                  display: 'flex', 
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: 'center', 
-                  justifyContent: { xs: 'center', sm: 'flex-start' },
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center', 
+              justifyContent: { xs: 'center', sm: 'flex-start' },
                   gap: { xs: 0.5, sm: 1 }, // 4px, 8px
                   mb: 1,
-                  mt: 0.5,
+              mt: 0.5,
                   width: '100%',
                 }}
               >
-                <Box
-                  sx={{
+              <Box
+                sx={{
                     width: { xs: '48px', sm: '56px' },
                     height: { xs: '48px', sm: '56px' },
-                    borderRadius: '50%',
-                    background: isDarkMode
-                      ? 'linear-gradient(135deg, #3f51b5 0%, #9c27b0 100%)'
-                      : 'linear-gradient(135deg, #3f51b5 0%, #9c27b0 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: isDarkMode
-                      ? '0 4px 20px rgba(63, 81, 181, 0.4)'
-                      : '0 4px 20px rgba(63, 81, 181, 0.3)',
-                    mb: { xs: 1, sm: 0 },
-                    border: isDarkMode
-                      ? '3px solid rgba(255, 255, 255, 0.1)'
-                      : '3px solid rgba(255, 255, 255, 0.8)',
+                  borderRadius: '50%',
+                  background: isDarkMode
+                    ? 'linear-gradient(135deg, #3f51b5 0%, #9c27b0 100%)'
+                    : 'linear-gradient(135deg, #3f51b5 0%, #9c27b0 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: isDarkMode
+                    ? '0 4px 20px rgba(63, 81, 181, 0.4)'
+                    : '0 4px 20px rgba(63, 81, 181, 0.3)',
+                  mb: { xs: 1, sm: 0 },
+                  border: isDarkMode
+                    ? '3px solid rgba(255, 255, 255, 0.1)'
+                    : '3px solid rgba(255, 255, 255, 0.8)',
                     flexShrink: 0,
-                  }}
-                >
+                }}
+              >
                   <i className='bx bx-movie-play' style={{ fontSize: '28px', color: 'white' }}></i>
-                </Box>
+              </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-start' } }}>
-                  <Typography
-                    component="h1"
-                    variant={isMobile ? "h5" : "h4"}
-                    sx={{ 
-                      fontWeight: 'bold',
-                      letterSpacing: '0.5px',
-                      color: isDarkMode ? '#fff' : '#3f51b5',
-                      textAlign: { xs: 'center', sm: 'left' },
+                <Typography
+                  component="h1"
+                  variant={isMobile ? "h5" : "h4"}
+                  sx={{ 
+                    fontWeight: 'bold',
+                    letterSpacing: '0.5px',
+                    color: isDarkMode ? '#fff' : '#3f51b5',
+                    textAlign: { xs: 'center', sm: 'left' },
                       mb: 0.1, // 2px
                       textShadow: isDarkMode ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
                       fontSize: { xs: '1.2rem', sm: '1.5rem' },
-                    }}
-                  >
-                    Daxil ol
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                      textAlign: { xs: 'center', sm: 'left' },
-                      maxWidth: '100%',
+                  }}
+                >
+                  Daxil ol
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                    textAlign: { xs: 'center', sm: 'left' },
+                    maxWidth: '100%',
                       mb: 0.5, // 4px
                       fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                    }}
-                  >
-                    Sevimli filmlərinizi tapmaq üçün Kinosu hesabınıza daxil olun
-                  </Typography>
-                </Box>
+                  }}
+                >
+                  Sevimli filmlərinizi tapmaq üçün Kinosu hesabınıza daxil olun
+                </Typography>
               </Box>
+            </Box>
               {/* Form alanı */}
-              <Box 
-                component="form" 
-                onSubmit={handleSubmit} 
+            <Box 
+              component="form" 
+              onSubmit={handleSubmit} 
                 sx={{ width: '100%', mt: 0.5 }} // 4px
-              >
-                <TextField
-                  required
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  label="İstifadəçi adı və ya Email"
-                  name="username"
-                  autoComplete="username"
-                  autoFocus
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
+            >
+              <TextField
+                required
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                label="İstifadəçi adı və ya Email"
+                name="username"
+                autoComplete="username"
+                autoFocus
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
                           <i className='bx bx-user' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
                         backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
                         '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
                         '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                         '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                         fontSize: isMobile ? '0.85rem' : '0.9rem',
-                    },
-                    '& .MuiInputBase-input': {
-                      color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
-                      fontSize: isMobile ? '0.9rem' : '1rem',
-                    },
-                  }}
-                />
-                <TextField
-                  required
-                  fullWidth
-                  size={isMobile ? "small" : "medium"}
-                  name="password"
-                  label="Şifrə"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
+                  },
+                  '& .MuiInputBase-input': {
+                    color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                  },
+                }}
+              />
+              <TextField
+                required
+                fullWidth
+                size={isMobile ? "small" : "medium"}
+                name="password"
+                label="Şifrə"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
                           <i className='bx bx-lock-alt' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="password-toggle"
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="password-toggle"
                           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)' }}
-                        >
-                          <i className={`bx ${showPassword ? 'bx-show' : 'bx-hide'}`} style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
-                        </button>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ 
+                      >
+                        <i className={`bx ${showPassword ? 'bx-show' : 'bx-hide'}`} style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
+                      </button>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ 
                     mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
                         backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
                         '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
                         '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                         '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                         fontSize: isMobile ? '0.85rem' : '0.9rem',
-                    },
-                    '& .MuiInputBase-input': {
-                      color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
-                      fontSize: isMobile ? '0.9rem' : '1rem',
-                    },
-                  }}
-                />
+                  },
+                  '& .MuiInputBase-input': {
+                    color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                  },
+                }}
+              />
                 <Box sx={{ width: '100%', textAlign: 'right', mb: 0.5 }}>
-                  <Button
-                    onClick={() => setForgotPasswordOpen(true)}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: isMobile ? '0.8rem' : '0.85rem',
-                      color: isDarkMode ? '#bb86fc' : '#673ab7',
-                      fontWeight: 500,
-                      p: 0.5,
-                      minWidth: 'auto',
-                      '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
-                    }}
-                  >
-                    Şifrəni unutmusunuz?
-                  </Button>
-                </Box>
                 <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
+                  onClick={() => setForgotPasswordOpen(true)}
                   sx={{
+                    textTransform: 'none',
+                    fontSize: isMobile ? '0.8rem' : '0.85rem',
+                    color: isDarkMode ? '#bb86fc' : '#673ab7',
+                    fontWeight: 500,
+                    p: 0.5,
+                    minWidth: 'auto',
+                      '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
+                  }}
+                >
+                  Şifrəni unutmusunuz?
+                </Button>
+              </Box>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
                     mt: 0.5, // 4px
                     mb: 0.5, // 4px
                     py: 1,
-                    background: isCaptchaVerified
-                      ? 'linear-gradient(90deg, #3f51b5, #9c27b0)'
-                      : 'linear-gradient(90deg, #7986cb, #ba68c8)',
-                    transition: 'all 0.3s',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    fontWeight: 500,
+                  background: isCaptchaVerified
+                    ? 'linear-gradient(90deg, #3f51b5, #9c27b0)'
+                    : 'linear-gradient(90deg, #7986cb, #ba68c8)',
+                  transition: 'all 0.3s',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  fontWeight: 500,
                     boxShadow: isDarkMode ? '0 4px 10px rgba(0, 0, 0, 0.3)' : '0 4px 10px rgba(0, 0, 0, 0.1)',
-                    '&:hover': {
-                      background: isCaptchaVerified
-                        ? 'linear-gradient(90deg, #303f9f, #7b1fa2)'
-                        : 'linear-gradient(90deg, #5c6bc0, #ab47bc)',
+                  '&:hover': {
+                    background: isCaptchaVerified
+                      ? 'linear-gradient(90deg, #303f9f, #7b1fa2)'
+                      : 'linear-gradient(90deg, #5c6bc0, #ab47bc)',
                       boxShadow: isDarkMode ? '0 6px 15px rgba(0, 0, 0, 0.4)' : '0 6px 15px rgba(0, 0, 0, 0.2)',
-                    },
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: '-100%',
-                      width: '100%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
-                      transition: 'all 0.8s',
-                    },
+                  },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: '-100%',
+                    width: '100%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
+                    transition: 'all 0.8s',
+                  },
                     '&:hover::after': { left: '100%' },
-                  }}
-                  startIcon={<i className='bx bx-shield-quarter' style={{ fontSize: 20 }}></i>}
-                >
-                  Daxil ol
-                </Button>
-                {/* Captcha bileşeni */}
-                <SlideCaptcha 
-                  isOpen={isCaptchaOpen} 
-                  onClose={closeCaptcha} 
-                  onVerify={handleCaptchaVerified} 
-                />
-                <Box 
-                  sx={{ 
+                }}
+                startIcon={<i className='bx bx-shield-quarter' style={{ fontSize: 20 }}></i>}
+              >
+                Daxil ol
+              </Button>
+              {/* Captcha bileşeni */}
+              <SlideCaptcha 
+                isOpen={isCaptchaOpen} 
+                onClose={closeCaptcha} 
+                onVerify={handleCaptchaVerified} 
+              />
+              <Box 
+                sx={{ 
                     my: 0.5, // 4px
-                    textAlign: 'center',
-                    position: 'relative',
-                    '&::before, &::after': {
-                      content: '""',
-                      position: 'absolute',
-                      top: '50%',
-                      width: '42%',
-                      height: '1px',
-                      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                    },
-                    '&::before': { left: 0 },
+                  textAlign: 'center',
+                  position: 'relative',
+                  '&::before, &::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '50%',
+                    width: '42%',
+                    height: '1px',
+                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                  },
+                  '&::before': { left: 0 },
                     '&::after': { right: 0 },
+                }}
+              >
+                <Typography 
+                  variant="caption" 
+                  component="span"
+                    sx={{ px: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)', fontSize: isMobile ? '0.8rem' : '0.85rem' }}
+                >
+                  və ya
+                </Typography>
+              </Box>
+              <Link
+                to="/register"
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size={isMobile ? "medium" : "large"}
+                  sx={{
+                      py: 0.8, // 8px
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontSize: isMobile ? '0.9rem' : '1rem',
+                    transition: 'all 0.3s',
+                    borderWidth: '2px',
+                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
+                    color: isDarkMode ? '#fff' : '#3f51b5',
+                    backgroundColor: 'transparent',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      borderWidth: '2px',
+                      borderColor: isDarkMode ? '#bb86fc' : '#5c6bc0',
+                        backgroundColor: isDarkMode ? alpha('#9c27b0', 0.1) : alpha('#3f51b5', 0.05),
+                    },
                   }}
                 >
-                  <Typography 
-                    variant="caption" 
-                    component="span"
-                    sx={{ px: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)', fontSize: isMobile ? '0.8rem' : '0.85rem' }}
-                  >
-                    və ya
-                  </Typography>
-                </Box>
-                <Link
-                  to="/register"
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    size={isMobile ? "medium" : "large"}
-                    sx={{
-                      py: 0.8, // 8px
-                      borderRadius: 2,
-                      textTransform: 'none',
-                      fontSize: isMobile ? '0.9rem' : '1rem',
-                      transition: 'all 0.3s',
-                      borderWidth: '2px',
-                      borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                      color: isDarkMode ? '#fff' : '#3f51b5',
-                      backgroundColor: 'transparent',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        borderWidth: '2px',
-                        borderColor: isDarkMode ? '#bb86fc' : '#5c6bc0',
-                        backgroundColor: isDarkMode ? alpha('#9c27b0', 0.1) : alpha('#3f51b5', 0.05),
-                      },
-                    }}
-                  >
-                    <i className='bx bx-user-plus' style={{ fontSize: isMobile ? '20px' : '22px', marginRight: '8px' }}></i>
-                    Qeydiyyatdan keç
-                  </Button>
-                </Link>
-              </Box>
-            </Paper>
-          </Container>
-        </Box>
+                  <i className='bx bx-user-plus' style={{ fontSize: isMobile ? '20px' : '22px', marginRight: '8px' }}></i>
+                  Qeydiyyatdan keç
+                </Button>
+              </Link>
+            </Box>
+          </Paper>
+        </Container>
+      </Box>
         {/* Şifrəni unutmusunuz dialogu */}
-        <Dialog
-          open={forgotPasswordOpen}
-          onClose={() => {
-            setForgotPasswordOpen(false);
-            setEmail('');
-          }}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
+      <Dialog
+        open={forgotPasswordOpen}
+        onClose={() => {
+          setForgotPasswordOpen(false);
+          setEmail('');
+        }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
               backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.9) : alpha('#ffffff', 0.9),
-              backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(10px)',
               boxShadow: isDarkMode ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.1)',
               border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.7)',
-              p: 1,
-              mx: { xs: 2, sm: 'auto' },
-              width: { xs: 'calc(100% - 32px)', sm: '100%' },
-              maxWidth: { xs: '100%', sm: '400px' },
+            p: 1,
+            mx: { xs: 2, sm: 'auto' },
+            width: { xs: 'calc(100% - 32px)', sm: '100%' },
+            maxWidth: { xs: '100%', sm: '400px' },
             },
-          }}
-        >
-          <DialogTitle sx={{ pb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <i className='bx bx-lock-open-alt' style={{ fontSize: '24px', color: isDarkMode ? '#bb86fc' : '#3f51b5' }}></i>
-              <Typography variant="h6" component="span" sx={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
-                Şifrəni Yenilə
-              </Typography>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Email"
-              type="email"
-              fullWidth
-              variant="outlined"
-              size={isMobile ? "small" : "medium"}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
+            <Typography variant="h6" component="span" sx={{ fontWeight: 'bold', fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+              Şifrəni Yenilə
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Email"
+            type="email"
+            fullWidth
+            variant="outlined"
+            size={isMobile ? "small" : "medium"}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
                     <i className='bx bx-envelope' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
+                </InputAdornment>
+              ),
+            }}
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
                   backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
                   '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
-                },
-                '& .MuiInputLabel-root': {
-                  color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+              },
+              '& .MuiInputLabel-root': {
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
                   '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   fontSize: isMobile ? '0.85rem' : '0.9rem',
-                },
-                '& .MuiInputBase-input': {
-                  color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
-                  fontSize: isMobile ? '0.9rem' : '1rem',
-                },
-              }}
-            />
+              },
+              '& .MuiInputBase-input': {
+                color: isDarkMode ? '#fff' : 'rgba(0, 0, 0, 0.87)',
+                fontSize: isMobile ? '0.9rem' : '1rem',
+              },
+            }}
+          />
             <Typography variant="body2" sx={{ mt: 2, color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)', fontSize: isMobile ? '0.8rem' : '0.85rem' }}>
-              Email ünvanınızı daxil edin. Şifrə yeniləmə linki göndəriləcək.
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button
-              onClick={() => {
-                setForgotPasswordOpen(false);
-                setEmail('');
-              }}
-              sx={{
-                textTransform: 'none',
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                borderRadius: 2,
-                fontWeight: 500,
-                fontSize: isMobile ? '0.8rem' : '0.85rem',
+            Email ünvanınızı daxil edin. Şifrə yeniləmə linki göndəriləcək.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button
+            onClick={() => {
+              setForgotPasswordOpen(false);
+              setEmail('');
+            }}
+            sx={{
+              textTransform: 'none',
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+              borderRadius: 2,
+              fontWeight: 500,
+              fontSize: isMobile ? '0.8rem' : '0.85rem',
                 '&:hover': { backgroundColor: isDarkMode ? alpha('#ffffff', 0.05) : alpha('#000000', 0.05) },
-              }}
-            >
-              Ləğv et
-            </Button>
-            <Button
-              onClick={handleForgotPassword}
-              variant="contained"
-              disabled={resetLoading}
-              sx={{
-                textTransform: 'none',
-                borderRadius: 2,
-                px: 3,
-                fontWeight: 500,
-                fontSize: isMobile ? '0.8rem' : '0.85rem',
+            }}
+          >
+            Ləğv et
+          </Button>
+          <Button
+            onClick={handleForgotPassword}
+            variant="contained"
+            disabled={resetLoading}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 500,
+              fontSize: isMobile ? '0.8rem' : '0.85rem',
                 background: isDarkMode ? 'linear-gradient(45deg, #9c27b0 0%, #673ab7 100%)' : 'linear-gradient(45deg, #3f51b5 0%, #673ab7 100%)',
                 '&:hover': { background: isDarkMode ? 'linear-gradient(45deg, #9c27b0 30%, #673ab7 90%)' : 'linear-gradient(45deg, #3f51b5 30%, #673ab7 90%)' },
-              }}
-            >
-              {resetLoading ? 'Göndərilir...' : 'Göndər'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+            }}
+          >
+            {resetLoading ? 'Göndərilir...' : 'Göndər'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       </Box>
     </>
   );

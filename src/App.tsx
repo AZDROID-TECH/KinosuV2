@@ -19,6 +19,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import AdminLayout from './components/AdminLayout';
 import MobileBottomMenu from './components/MobileBottomMenu';
+import CustomToastContainer from './components/Common/CustomToast';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -98,19 +99,7 @@ const AppContent = () => {
       </main>
       {!isAdminRoute && <Footer />}
       <MobileBottomMenu />
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        transition={Slide}
-      />
+      <CustomToastContainer />
     </div>
   );
 }

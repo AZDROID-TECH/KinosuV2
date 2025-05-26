@@ -1,4 +1,5 @@
 import { toast, ToastOptions } from 'react-toastify';
+import { showCustomToast } from '../components/Common/CustomToast';
 
 // Ümumi toast seçimləri (gələcəkdə lazım ola bilər)
 const commonOptions: ToastOptions = {
@@ -7,32 +8,20 @@ const commonOptions: ToastOptions = {
     // progressClassName: 'custom-toast-progress',
 };
 
-export const showSuccessToast = (message: string | React.ReactNode, options?: ToastOptions) => {
-    toast.success(message, {
-        ...commonOptions,
-        ...options,
-    });
+export const showSuccessToast = (message: string) => {
+    showCustomToast({ type: 'success', message });
 };
 
-export const showErrorToast = (message: string | React.ReactNode, options?: ToastOptions) => {
-    toast.error(message, {
-        ...commonOptions,
-        ...options,
-    });
+export const showErrorToast = (message: string) => {
+    showCustomToast({ type: 'error', message });
 };
 
-export const showWarningToast = (message: string | React.ReactNode, options?: ToastOptions) => {
-    toast.warning(message, {
-        ...commonOptions,
-        ...options,
-    });
+export const showWarningToast = (message: string) => {
+    showCustomToast({ type: 'warning', message });
 };
 
-export const showInfoToast = (message: string | React.ReactNode, options?: ToastOptions) => {
-    toast.info(message, {
-        ...commonOptions,
-        ...options,
-    });
+export const showInfoToast = (message: string) => {
+    showCustomToast({ type: 'info', message });
 };
 
 // Gələcəkdə lazım olarsa: xüsusi render üçün
