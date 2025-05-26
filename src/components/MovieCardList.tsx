@@ -31,6 +31,7 @@ interface MovieCardListProps {
   onDeleteMovie: (movieId: number) => void;
   skeletonCard: () => JSX.Element;
   isMobile: boolean;
+  onAddMovieClick: () => void;
 }
 
 /**
@@ -45,7 +46,8 @@ const MovieCardList: React.FC<MovieCardListProps> = ({
   onUpdateMovie,
   onDeleteMovie,
   skeletonCard: SkeletonCard,
-  isMobile
+  isMobile,
+  onAddMovieClick
 }) => {
   const theme = useTheme();
   const { isLoggedIn } = useAuth();
@@ -61,6 +63,59 @@ const MovieCardList: React.FC<MovieCardListProps> = ({
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );
+
+  // Film yoxdursa boş mesajı göstər
+  if (!isLoading && movies.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: '300px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: 6,
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 2, color: 'text.secondary', fontWeight: 600 }}>
+          Hələ heç bir film əlavə etməmisən
+        </Typography>
+        <Box
+          onClick={onAddMovieClick}
+          className="ilk-film-link"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.2,
+            px: 3,
+            py: 1.2,
+            mt: 1,
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(92,107,192,0.08)' : 'rgba(126,87,194,0.07)',
+            color: 'primary.main',
+            fontWeight: 600,
+            fontSize: '1.05rem',
+            borderRadius: 2.5,
+            boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 2px 8px rgba(92,107,192,0.08)' : '0 2px 8px rgba(126,87,194,0.08)',
+            cursor: 'pointer',
+            transition: 'all 0.18s',
+            border: '1.5px solid',
+            borderColor: 'primary.light',
+            '&:hover': {
+              bgcolor: 'primary.light',
+              color: '#fff',
+              boxShadow: '0 4px 16px rgba(92,107,192,0.13)',
+              borderColor: 'primary.main',
+              transform: 'translateY(-2px) scale(1.03)',
+            },
+            userSelect: 'none',
+          }}
+        >
+          <i className='bx bx-plus' style={{ fontSize: '22px', marginRight: '4px' }}></i>
+          İlk filmini əlavə et
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <>

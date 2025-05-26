@@ -203,10 +203,9 @@ const Header = () => {
         },
       }}
     >
-      <StatusAvatar 
-        src={avatar ? avatar : undefined} 
-        alt={username || "User"} 
-        size={35}
+      <StatusAvatar
+        avatarUrl={avatar || undefined}
+        username={username || "User"}
         isOnline={userId ? isUserOnline(userId) : false}
       />
     </IconButton>
@@ -444,8 +443,8 @@ const Header = () => {
                   mb: 0.5
                 }}>
                   <StatusAvatar
-                    src={avatar ? avatar : undefined}
-                    alt={username || 'İstifadəçi'}
+                    avatarUrl={avatar || undefined}
+                    username={username || 'İstifadəçi'}
                     isOnline={userId ? isUserOnline(userId) : false}
                     size={42}
                     sx={{

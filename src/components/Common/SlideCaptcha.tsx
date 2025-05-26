@@ -292,6 +292,12 @@ const SlideCaptcha: React.FC<SlideCaptchaProps> = ({ isOpen, onClose, onVerify }
       aria-describedby="slide-captcha-description"
       maxWidth="xs"
       fullWidth
+      sx={{
+        '& .MuiBackdrop-root': {
+          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(30,30,60,0.18)',
+        }
+      }}
       PaperProps={{
         sx: {
           borderRadius: 3,

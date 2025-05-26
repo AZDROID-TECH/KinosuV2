@@ -240,21 +240,23 @@ const Register = () => {
       <Container 
         component="main" 
         maxWidth="sm" 
+        disableGutters
         sx={{ 
           position: 'relative', 
           zIndex: 1,
-          px: { xs: 2, sm: 3 },
-          maxWidth: { xs: '95%', sm: '500px', md: '550px' },
-          height: { sm: 'auto', md: 'auto' },
+          px: { xs: 1, sm: 2 },
+          maxWidth: { xs: '100%', sm: '480px', md: '600px' },
+          width: '100%',
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center'
+          justifyContent: 'flex-start',
         }}
       >
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 2.5, sm: 3 },
+            p: { xs: 2, sm: 3 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -273,6 +275,11 @@ const Register = () => {
               ? '1px solid rgba(255, 255, 255, 0.1)'
               : '1px solid rgba(255, 255, 255, 0.7)',
             transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            minHeight: { xs: 380, sm: 420 },
+            maxHeight: { xs: 520, sm: 560 },
+            justifyContent: 'center',
+            mt: { xs: 1, sm: 1 },
+            maxWidth: { xs: '100%', sm: '480px', md: '600px' },
           }}
         >
           <Box
@@ -281,23 +288,20 @@ const Register = () => {
               top: 0,
               left: 0,
               right: 0,
-              height: '4px',
+              height: { xs: '3px', sm: '4px' },
               background: isDarkMode
                 ? 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)'
                 : 'linear-gradient(90deg, #3f51b5, #9c27b0, #3f51b5)',
               backgroundSize: '200% 100%',
               animation: 'gradient 3s ease infinite',
               '@keyframes gradient': {
-                '0%': {
-                  backgroundPosition: '0% 50%'
-                },
-                '50%': {
-                  backgroundPosition: '100% 50%'
-                },
-                '100%': {
-                  backgroundPosition: '0% 50%'
-                },
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' },
               },
+              borderTopLeftRadius: 12,
+              borderTopRightRadius: 12,
+              zIndex: 2,
             }}
           />
 
@@ -306,8 +310,8 @@ const Register = () => {
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: 'center', 
             justifyContent: { xs: 'center', sm: 'flex-start' },
-            gap: { xs: 0.5, sm: 3 }, 
-            mb: 2,
+            gap: { xs: 0.5, sm: 1 },
+            mb: 1,
             mt: 0.5,
             width: '100%'
           }}>
@@ -347,7 +351,7 @@ const Register = () => {
                   letterSpacing: '0.5px',
                   color: isDarkMode ? '#fff' : '#3f51b5',
                   textAlign: { xs: 'center', sm: 'left' },
-                  mb: 0.5,
+                  mb: 0.1,
                   textShadow: isDarkMode 
                     ? '0 2px 4px rgba(0,0,0,0.3)' 
                     : 'none',
@@ -373,7 +377,7 @@ const Register = () => {
           <Box 
             component="form" 
             onSubmit={handleSubmit} 
-            sx={{ width: '100%' }}
+            sx={{ width: '100%', mt: 0.5 }}
           >
             <TextField
               required
@@ -388,10 +392,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <i className='bx bx-user' style={{ 
-                      fontSize: isMobile ? '18px' : '20px', 
-                      color: isDarkMode ? '#9c27b0' : '#3f51b5' 
-                    }}></i>
+                    <i className='bx bx-user' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
                   </InputAdornment>
                 ),
               }}
@@ -399,22 +400,13 @@ const Register = () => {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  backgroundColor: isDarkMode 
-                    ? alpha(theme.palette.background.paper, 0.4)
-                    : alpha('#ffffff', 0.6),
-                  '&:hover fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                    borderWidth: '2px',
-                  },
+                  backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
+                  '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
+                  '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
+                  '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   fontSize: isMobile ? '0.85rem' : '0.9rem',
                 },
                 '& .MuiInputBase-input': {
@@ -436,10 +428,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <i className='bx bx-envelope' style={{ 
-                      fontSize: isMobile ? '18px' : '20px', 
-                      color: isDarkMode ? '#9c27b0' : '#3f51b5' 
-                    }}></i>
+                    <i className='bx bx-envelope' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
                   </InputAdornment>
                 ),
               }}
@@ -447,22 +436,13 @@ const Register = () => {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  backgroundColor: isDarkMode 
-                    ? alpha(theme.palette.background.paper, 0.4)
-                    : alpha('#ffffff', 0.6),
-                  '&:hover fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                    borderWidth: '2px',
-                  },
+                  backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
+                  '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
+                  '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
+                  '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   fontSize: isMobile ? '0.85rem' : '0.9rem',
                 },
                 '& .MuiInputBase-input': {
@@ -484,10 +464,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <i className='bx bx-lock-alt' style={{ 
-                      fontSize: isMobile ? '18px' : '20px', 
-                      color: isDarkMode ? '#9c27b0' : '#3f51b5' 
-                    }}></i>
+                    <i className='bx bx-lock-alt' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -496,13 +473,7 @@ const Register = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="password-toggle"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)' }}
                     >
                       <i className={`bx ${showPassword ? 'bx-show' : 'bx-hide'}`} style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
                     </button>
@@ -513,22 +484,13 @@ const Register = () => {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  backgroundColor: isDarkMode 
-                    ? alpha(theme.palette.background.paper, 0.4)
-                    : alpha('#ffffff', 0.6),
-                  '&:hover fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                    borderWidth: '2px',
-                  },
+                  backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
+                  '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
+                  '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
+                  '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   fontSize: isMobile ? '0.85rem' : '0.9rem',
                 },
                 '& .MuiInputBase-input': {
@@ -550,10 +512,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <i className='bx bx-lock-alt' style={{ 
-                      fontSize: isMobile ? '18px' : '20px', 
-                      color: isDarkMode ? '#9c27b0' : '#3f51b5' 
-                    }}></i>
+                    <i className='bx bx-lock-alt' style={{ fontSize: isMobile ? '18px' : '20px', color: isDarkMode ? '#9c27b0' : '#3f51b5' }}></i>
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -562,13 +521,7 @@ const Register = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="password-toggle"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'
-                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)' }}
                     >
                       <i className={`bx ${showPassword ? 'bx-show' : 'bx-hide'}`} style={{ fontSize: isMobile ? '18px' : '20px' }}></i>
                     </button>
@@ -579,22 +532,13 @@ const Register = () => {
                 mb: 2,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
-                  backgroundColor: isDarkMode 
-                    ? alpha(theme.palette.background.paper, 0.4)
-                    : alpha('#ffffff', 0.6),
-                  '&:hover fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: isDarkMode ? '#9c27b0' : '#3f51b5',
-                    borderWidth: '2px',
-                  },
+                  backgroundColor: isDarkMode ? alpha(theme.palette.background.paper, 0.4) : alpha('#ffffff', 0.6),
+                  '&:hover fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5' },
+                  '&.Mui-focused fieldset': { borderColor: isDarkMode ? '#9c27b0' : '#3f51b5', borderWidth: '2px' },
                 },
                 '& .MuiInputLabel-root': {
                   color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: isDarkMode ? '#9c27b0' : '#3f51b5',
-                  },
+                  '&.Mui-focused': { color: isDarkMode ? '#9c27b0' : '#3f51b5' },
                   fontSize: isMobile ? '0.85rem' : '0.9rem',
                 },
                 '& .MuiInputBase-input': {
@@ -608,9 +552,9 @@ const Register = () => {
               fullWidth
               variant="contained"
               sx={{
-                mt: 3, 
-                mb: 2, 
-                py: 1.2,
+                mt: 0.5,
+                mb: 0.5,
+                py: 1,
                 background: isCaptchaVerified
                   ? 'linear-gradient(90deg, #3f51b5, #9c27b0)'
                   : 'linear-gradient(90deg, #7986cb, #ba68c8)',
@@ -639,9 +583,7 @@ const Register = () => {
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)',
                   transition: 'all 0.8s',
                 },
-                '&:hover::after': {
-                  left: '100%',
-                }
+                '&:hover::after': { left: '100%' },
               }}
               startIcon={<i className='bx bx-shield-quarter' style={{ fontSize: 20 }}></i>}
             >
@@ -657,7 +599,7 @@ const Register = () => {
 
             <Box 
               sx={{ 
-                my: 2,
+                my: 0.5,
                 textAlign: 'center',
                 position: 'relative',
                 '&::before, &::after': {
@@ -669,17 +611,13 @@ const Register = () => {
                   backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
                 },
                 '&::before': { left: 0 },
-                '&::after': { right: 0 }
+                '&::after': { right: 0 },
               }}
             >
               <Typography 
                 variant="caption" 
                 component="span"
-                sx={{ 
-                  px: 2,
-                  color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                  fontSize: isMobile ? '0.8rem' : '0.85rem',
-                }}
+                sx={{ px: 1, color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)', fontSize: isMobile ? '0.8rem' : '0.85rem' }}
               >
                 və ya
               </Typography>
@@ -694,7 +632,7 @@ const Register = () => {
                 variant="outlined"
                 size={isMobile ? "medium" : "large"}
                 sx={{
-                  py: isMobile ? 1 : 1.2,
+                  py: 0.8,
                   borderRadius: 2,
                   textTransform: 'none',
                   fontSize: isMobile ? '0.9rem' : '1rem',
@@ -707,9 +645,7 @@ const Register = () => {
                     transform: 'translateY(-2px)',
                     borderWidth: '2px',
                     borderColor: isDarkMode ? '#bb86fc' : '#5c6bc0',
-                    backgroundColor: isDarkMode 
-                      ? alpha('#9c27b0', 0.1) 
-                      : alpha('#3f51b5', 0.05),
+                    backgroundColor: isDarkMode ? alpha('#9c27b0', 0.1) : alpha('#3f51b5', 0.05),
                   },
                 }}
               >

@@ -157,13 +157,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, movieId, onVoteChang
                 position: 'relative', // Menü konumu için
             }}
         >
-            <StatusAvatar 
-                component={RouterLink} 
-                to={`/user/username/${comment.author?.username}`}
-                src={comment.author?.avatar_url || ''} 
-                alt={comment.author?.username || 'Anonim'} 
+            <StatusAvatar
+                avatarUrl={comment.author?.avatar_url || ''}
+                username={comment.author?.username || 'Anonim'}
                 isOnline={isAuthorOnline()}
-                size={36}
             />
             <Box sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>

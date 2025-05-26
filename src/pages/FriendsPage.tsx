@@ -248,18 +248,10 @@ const FriendsPage: React.FC = () => {
                   borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 }}
               >
-                <StatusAvatar 
-                  src={friend.avatar_url || undefined} 
-                  alt={friend.username}
-                  size={60}
+                <StatusAvatar
+                  avatarUrl={friend.avatar_url || undefined}
+                  username={friend.username}
                   isOnline={isUserOnline(friend.id)}
-                  sx={{ 
-                    border: `2px solid ${isUserOnline(friend.id) ? theme.palette.success.main : theme.palette.grey[500]}`,
-                    transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'scale(1.05)'
-                    }
-                  }}
                 />
                 
                 <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
@@ -397,13 +389,9 @@ const FriendsPage: React.FC = () => {
                 }}
               >
                 <StatusAvatar
-                  src={request.sender?.avatar_url || undefined}
-                  alt={request.sender?.username || ''}
-                  size={60}
+                  avatarUrl={request.sender?.avatar_url || undefined}
+                  username={request.sender?.username || ''}
                   isOnline={request.sender?.id ? isUserOnline(request.sender.id) : false}
-                  sx={{
-                    border: `2px solid ${theme.palette.info.main}`
-                  }}
                 />
                 
                 <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
@@ -540,13 +528,9 @@ const FriendsPage: React.FC = () => {
                 }}
               >
                 <StatusAvatar
-                  src={request.receiver?.avatar_url || undefined}
-                  alt={request.receiver?.username || ''}
-                  size={60}
+                  avatarUrl={request.receiver?.avatar_url || undefined}
+                  username={request.receiver?.username || ''}
                   isOnline={request.receiver?.id ? isUserOnline(request.receiver.id) : false}
-                  sx={{
-                    border: `2px solid ${theme.palette.warning.main}`
-                  }}
                 />
                 
                 <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
@@ -667,13 +651,9 @@ const FriendsPage: React.FC = () => {
                   }}
                 >
                   <StatusAvatar
-                    src={user.avatar_url || undefined}
-                    alt={user.username}
-                    size={60}
+                    avatarUrl={user.avatar_url || undefined}
+                    username={user.username}
                     isOnline={isUserOnline(user.id)}
-                    sx={{ 
-                      border: `2px solid ${theme.palette.secondary.main}`
-                    }}
                   />
                   
                   <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>

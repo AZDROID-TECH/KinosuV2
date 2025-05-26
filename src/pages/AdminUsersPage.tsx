@@ -26,7 +26,10 @@ import {
   TextField,
   useMediaQuery,
   Stack,
-  Badge
+  Badge,
+  InputAdornment,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -41,6 +44,12 @@ import { formatDate } from '../utils/movieHelpers';
 import UserCommentsModal from '../components/Admin/UserCommentsModal';
 import StatusAvatar from '../components/Common/StatusAvatar';
 import { useSocketContext } from '../context/SocketContext';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import SearchIcon from '@mui/icons-material/Search';
+import SortIcon from '@mui/icons-material/Sort';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 
 interface UserForAdmin {
   id: number;
@@ -214,331 +223,393 @@ const DeleteUserDialog = ({ open, user, onClose, onConfirm, isDeleting }: Delete
  * @desc İstifadəçiləri admin panelində idarə etmək üçün interfeys.
  */
 const AdminUsersPage = () => {
-  const { username: currentAdminUsername, userId: currentUserId } = useAuth(); 
-  const theme = useTheme();
+  const { user: currentUser } = useAuth();
+  const { onlineUsers } = useSocketContext();
   const [users, setUsers] = useState<UserForAdmin[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // İşleme durumları
-  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
-  const [editingUser, setEditingUser] = useState<UserForAdmin | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isEditSaving, setIsEditSaving] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<UserForAdmin | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserForAdmin | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Yeni state'lər şərh modalı üçün
-  const [selectedUserForComments, setSelectedUserForComments] = useState<UserForAdmin | null>(null);
-  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [commentsModalOpen, setCommentsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 600) {
+      return 'card';
+    }
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('admin-users-view-mode') === 'card' ? 'card' : 'list';
+    }
+    return 'list';
+  });
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'id' | 'username' | 'created_at' | 'is_admin'>('id');
 
-  // Bildiriş mesajı
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const { isAdmin } = useAuth();
-  const { isUserOnline } = useSocketContext();
-
-  const fetchUsers = useCallback(async () => {
+  useEffect(() => {
+    const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const fetchedUsers = await userAPI.getAllUsers();
-      setUsers(fetchedUsers);
-    } catch (err: any) {
-      console.error('İstifadəçi siyahısı alınarkən xəta:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'İstifadəçi siyahısı alınamadı.';
-      setError(errorMessage);
-      setUsers([]);
+        const res = await userAPI.getAllUsers();
+        setUsers(res);
+        setUsersRaw(res);
+      } catch (err) {
+        setError('İstifadəçilər yüklənərkən xəta baş verdi.');
     } finally {
       setLoading(false);
     }
+    };
+    fetchUsers();
   }, []);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
   const handleAdminStatusChange = async (userId: number, currentStatus: boolean) => {
-    setUpdatingUserId(userId); 
-    setError(null);
     try {
       await userAPI.setUserAdminStatus(userId, !currentStatus);
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId ? { ...user, is_admin: !currentStatus } : user
-        )
-      );
-      setSuccessMessage(`İstifadəçinin admin statusu ${!currentStatus ? 'verildi' : 'alındı'}.`);
-    } catch (err: any) {
-      console.error(`Admin statusu dəyişdirilərkən xəta (ID: ${userId}):`, err);
-      setError(err.response?.data?.error || 'Admin statusu yenilənərkən xəta baş verdi.');
-    } finally {
-      setUpdatingUserId(null);
+      setUsers(users.map(u => (u.id === userId ? { ...u, is_admin: !currentStatus } : u)));
+    } catch (err) {
+        setError('Admin statusu yenilənərkən xəta baş verdi.');
     }
   };
 
   const handleEditUser = (user: UserForAdmin) => {
-    setEditingUser(user);
-    setIsEditDialogOpen(true);
+    setSelectedUser(user);
+    setEditDialogOpen(true);
   };
 
   const handleUpdateUser = async (userId: number, data: { username?: string; email?: string }) => {
-    setIsEditSaving(true);
-    setError(null);
+    setIsSaving(true);
     try {
-      const response = await userAPI.updateUser(userId, data);
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId ? { ...user, ...data } : user
-        )
-      );
-      setSuccessMessage('İstifadəçi məlumatları uğurla yeniləndi.');
-      setIsEditSaving(false);
-      setIsEditDialogOpen(false);
-      setEditingUser(null);
-    } catch (err: any) {
-      console.error(`İstifadəçi məlumatları yenilənərkən xəta (ID: ${userId}):`, err);
-      setError(err.response?.data?.error || 'İstifadəçi məlumatları yenilənərkən xəta baş verdi.');
-      setIsEditSaving(false);
+      const res = await userAPI.updateUser(userId, data);
+      setUsers(users.map(u => (u.id === userId ? { ...u, ...res.data } : u)));
+      setEditDialogOpen(false);
+    } catch (err) {
+        setError('İstifadəçi yenilənərkən xəta baş verdi.');
+    } finally {
+        setIsSaving(false);
     }
   };
 
   const handleDeleteUser = (user: UserForAdmin) => {
-    setDeletingUser(user);
-    setIsDeleting(false);
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = async (userId: number) => {
     setIsDeleting(true);
-    setError(null);
     try {
       await userAPI.deleteUser(userId);
-      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-      setSuccessMessage('İstifadəçi uğurla silindi.');
-      setIsDeleting(false);
-      setDeletingUser(null);
-    } catch (err: any) {
-      console.error(`İstifadəçi silinərkən xəta (ID: ${userId}):`, err);
-      setError(err.response?.data?.error || 'İstifadəçi silinərkən xəta baş verdi.');
+      setUsers(users.filter(u => u.id !== userId));
+      setDeleteDialogOpen(false);
+    } catch (err) {
+        setError('İstifadəçi silinərkən xəta baş verdi.');
+    } finally {
       setIsDeleting(false);
     }
   };
 
-  // Yeni funksiya: Şərh modalını açmaq üçün
   const handleOpenCommentsModal = (user: UserForAdmin) => {
-      setSelectedUserForComments(user);
-      setIsCommentsModalOpen(true);
+    setSelectedUser(user);
+    setCommentsModalOpen(true);
   };
 
-  // -- Render Fonksiyonları --
+  const [usersRaw, setUsersRaw] = useState<UserForAdmin[]>([]);
+
+  const sortedUsers = [...users].sort((a, b) => {
+    if (sortBy === 'id') return a.id - b.id;
+    if (sortBy === 'username') return a.username.localeCompare(b.username);
+    if (sortBy === 'created_at') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    if (sortBy === 'is_admin') return (b.is_admin ? 1 : 0) - (a.is_admin ? 1 : 0);
+    return 0;
+  });
+
+  // Arama kutusu anlık filtreleme
+  useEffect(() => {
+    setUsers(
+      usersRaw.filter(u =>
+        (searchQuery === '' ||
+          u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(u.id) === searchQuery)
+      )
+    );
+  }, [searchQuery, usersRaw]);
+
   const renderContent = () => {
     if (loading) {
       return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress color="secondary" />
         </Box>
       );
     }
-
     if (error) {
       return (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
+        <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>
       );
     }
-
     if (users.length === 0) {
       return (
-        <Alert severity="info" sx={{ mt: 2 }}>
-          Heç bir istifadəçi tapılmadı.
-        </Alert>
+        <Alert severity="info" sx={{ m: 2 }}>İstifadəçi tapılmadı.</Alert>
       );
     }
 
-    return (
-      <TableContainer component={Paper} elevation={2} sx={{ mt: 2 }}>
-        <Table sx={{ minWidth: 750 }} aria-label="istifadəçilər cədvəli">
-          <TableHead sx={{ backgroundColor: alpha(theme.palette.secondary.main, 0.1) }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Avatar</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>İstifadəçi adı</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>E-poçt</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Qoşulma Tarixi</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Şərhlər</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Əməliyyatlar</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow 
-                key={user.id} 
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                hover
-              >
-                <TableCell component="th" scope="row">{user.id}</TableCell>
-                <TableCell>
-                  <StatusAvatar 
-                    src={user.avatar_url || undefined} 
-                    alt={user.username} 
-                    size={36}
-                    isOnline={isUserOnline(user.id)}
-                  />
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'medium' }}>
-                  <Link 
-                    to={`/user/${user.id}`} 
-                    style={{ 
-                      color: 'inherit', 
-                      textDecoration: 'none',
-                      fontWeight: 'inherit'
-                    }}
-                  >
-                    {user.username}
-                  </Link>
-                </TableCell>
-                <TableCell>{user.email || '-'}</TableCell>
-                <TableCell>
-                  {user.is_admin ? (
-                    <Chip 
-                      icon={<AdminPanelSettingsIcon />} 
-                      label="Admin" 
-                      color="secondary" 
-                      size="small"
-                      variant="outlined"
-                    />
-                  ) : (
-                    <Chip 
-                      icon={<PersonIcon />} 
-                      label="İstifadəçi" 
-                      size="small"
-                      variant="outlined"
-                    />
-                  )}
-                </TableCell>
-                <TableCell>{formatDate(user.created_at)}</TableCell>
-                <TableCell align="center">
-                  <Tooltip title="İstifadəçi şərhlərini göstər">
-                    <IconButton 
-                      onClick={() => handleOpenCommentsModal(user)}
-                      color="primary"
-                      size="small"
+    if (viewMode === 'list' && !isMobile) {
+      return (
+        <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, overflow: 'auto', minWidth: { xs: 600, sm: 'unset' } }}>
+          <Table stickyHeader sx={{ minWidth: 600 }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>İstifadəçi</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>E-poçt</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Qeydiyyat Tarixi</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Admin</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Əməliyyatlar</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sortedUsers.map((user) => {
+                const isOnline = onlineUsers.includes(user.id);
+                return (
+                  <TableRow key={user.id} hover sx={{ '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) } }}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <StatusAvatar isOnline={isOnline} avatarUrl={user.avatar_url} username={user.username} />
+                        <Typography variant="body2" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: { xs: '0.95rem', sm: '1rem' } }}>{user.username}</Typography>
+              </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '4px' }}>
+                        <MailOutlineIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: '4px' }} />
+                        <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>{user.email || '-'}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '8px' }}>
+                        <EventNoteIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: '4px' }} />
+                        <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>{formatDate(user.created_at)}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                  <Chip
+                        label={user.is_admin ? 'Admin' : 'İstifadəçi'}
+                        color={user.is_admin ? 'secondary' : 'default'}
+                    size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} justifyContent="flex-start">
+                        <Tooltip title="Admin Statusu Dəyişdir">
+                          <IconButton
+                            onClick={() => handleAdminStatusChange(user.id, user.is_admin)}
+                            color={user.is_admin ? 'secondary' : 'default'}
+                            disabled={currentUser?.id === user.id}
+                            sx={{ '&:hover': { bgcolor: alpha(theme.palette.secondary.main, 0.1) } }}
+                          >
+                            {user.is_admin ? <RemoveModeratorIcon /> : <AdminPanelSettingsIcon />}
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Redaktə Et">
+                  <IconButton
+                    onClick={() => handleEditUser(user)}
+                            sx={{ '&:hover': { bgcolor: alpha(theme.palette.info.main, 0.1) } }}
+                          >
+                            <EditIcon color="info" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Yorumları Gör">
+                          <IconButton
+                            onClick={() => handleOpenCommentsModal(user)}
+                            sx={{ '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) } }}
+                          >
+                            <ChatBubbleOutlineIcon color="primary" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Sil">
+                          <IconButton
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={currentUser?.id === user.id}
+                            sx={{ '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) } }}
+                          >
+                            <DeleteIcon color="error" />
+                  </IconButton>
+                </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      );
+    } else {
+      return (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, p: 2 }}>
+          {sortedUsers.map((user) => {
+            const isOnline = onlineUsers.includes(user.id);
+            return (
+              <Paper key={user.id} sx={{ p: 2, boxShadow: 2, borderRadius: 2, transition: 'all 0.3s', '&:hover': { boxShadow: 6, bgcolor: alpha(theme.palette.primary.main, 0.05) } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <StatusAvatar isOnline={isOnline} avatarUrl={user.avatar_url} username={user.username} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{user.username}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '4px' }}>
+                  <MailOutlineIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: '4px' }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>{user.email || '-'}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '8px' }}>
+                  <EventNoteIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: '4px' }} />
+                  <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>{formatDate(user.created_at)}</Typography>
+                </Box>
+                <Chip
+                  label={user.is_admin ? 'Admin' : 'İstifadəçi'}
+                  color={user.is_admin ? 'secondary' : 'default'}
+                  size="small"
+                  sx={{ mb: 2, fontWeight: 'bold' }}
+                />
+                <Stack direction="row" spacing={1} justifyContent="flex-start">
+                  <Tooltip title="Admin Statusu Dəyişdir">
+                    <IconButton
+                      onClick={() => handleAdminStatusChange(user.id, user.is_admin)}
+                      color={user.is_admin ? 'secondary' : 'default'}
+                      disabled={currentUser?.id === user.id}
+                      sx={{ '&:hover': { bgcolor: alpha(theme.palette.secondary.main, 0.1) } }}
                     >
-                      <Badge 
-                        badgeContent={user.comment_count || 0} 
-                        color="primary"
-                        max={99}
-                      >
-                        <ChatBubbleOutlineIcon />
-                      </Badge>
+                      {user.is_admin ? <RemoveModeratorIcon /> : <AdminPanelSettingsIcon />}
+                    </IconButton>
+                </Tooltip>
+                  <Tooltip title="Redaktə Et">
+                    <IconButton
+                      onClick={() => handleEditUser(user)}
+                      sx={{ '&:hover': { bgcolor: alpha(theme.palette.info.main, 0.1) } }}
+                    >
+                      <EditIcon color="info" />
+                    </IconButton>
+                </Tooltip>
+                  <Tooltip title="Yorumları Gör">
+                  <IconButton
+                    onClick={() => handleOpenCommentsModal(user)}
+                      sx={{ '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) } }}
+                    >
+                      <ChatBubbleOutlineIcon color="primary" />
                     </IconButton>
                   </Tooltip>
-                </TableCell>
-                <TableCell align="center">
-                  <Stack direction="row" spacing={0.5} justifyContent="center">
-                    <Tooltip title="İstifadəçini redaktə et">
-                      <IconButton 
-                        onClick={() => handleEditUser(user)}
-                        color="primary"
-                        size="small"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    
-                    <Tooltip title={user.is_admin ? "Admin statusunu ləğv et" : "Admin təyin et"}>
-                      <IconButton 
-                        onClick={() => handleAdminStatusChange(user.id, user.is_admin)}
-                        color={user.is_admin ? "default" : "secondary"}
-                        size="small"
-                        disabled={updatingUserId === user.id || user.id === currentUserId}
-                      >
-                        {updatingUserId === user.id ? (
-                          <CircularProgress size={20} />
-                        ) : user.is_admin ? (
-                          <RemoveModeratorIcon fontSize="small" />
-                        ) : (
-                          <AdminPanelSettingsIcon fontSize="small" />
-                        )}
-                      </IconButton>
-                    </Tooltip>
-                    
-                    <Tooltip title="İstifadəçini sil">
-                      <IconButton 
-                        onClick={() => handleDeleteUser(user)}
-                        color="error"
-                        size="small"
-                        disabled={user.id === currentUserId}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
+                  <Tooltip title="Sil">
+                    <IconButton
+                      onClick={() => handleDeleteUser(user)}
+                      disabled={currentUser?.id === user.id}
+                      sx={{ '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) } }}
+                    >
+                      <DeleteIcon color="error" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Paper>
+            );
+          })}
+        </Box>
+      );
+    }
   };
 
-  // -- Ana Render --
-  return (
-    <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      {/* Köhnə başlıq silindi */}
-      {/* <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}> */}
-      {/*  İstifadəçi İdarəetmə */}
-      {/* </Typography> */}
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          {successMessage}
-        </Alert>
-      )}
-
+    return (
+    <Box sx={{ p: { xs: 1, sm: 2 }, maxWidth: '100%', overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, mb: 2, justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="ID və ya istifadəçi adı ilə axtar..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            sx={{ minWidth: 220, bgcolor: theme.palette.background.paper, borderRadius: 2 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <SearchIcon color="primary" />
+                </InputAdornment>
+              )
+            }}
+          />
+        </Box>
+        <Stack direction="row" spacing={1}>
+          {!isMobile && (
+            <>
+              <Button
+                variant={viewMode === 'list' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => {
+                  setViewMode('list');
+                  localStorage.setItem('admin-users-view-mode', 'list');
+                }}
+                sx={{ borderRadius: 2, minWidth: 40, p: 1 }}
+              >
+                <ViewListIcon />
+              </Button>
+              <Button
+                variant={viewMode === 'card' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => {
+                  setViewMode('card');
+                  localStorage.setItem('admin-users-view-mode', 'card');
+                }}
+                sx={{ borderRadius: 2, minWidth: 40, p: 1 }}
+              >
+                <ViewModuleIcon />
+              </Button>
+            </>
+          )}
+          <Select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                      size="small"
+            startAdornment={<SortIcon sx={{ mr: 1, color: theme.palette.primary.main }} />}
+            sx={{
+              borderRadius: 2,
+              minWidth: 140,
+              bgcolor: theme.palette.background.paper,
+              fontWeight: 500,
+              fontSize: '1rem',
+              '.MuiSelect-select': { display: 'flex', alignItems: 'center', gap: 1 },
+            }}
+          >
+            <MenuItem value="id">ID</MenuItem>
+            <MenuItem value="username">İstifadəçi adı</MenuItem>
+            <MenuItem value="created_at">Qeydiyyat tarixi</MenuItem>
+            <MenuItem value="is_admin">Admin statusu</MenuItem>
+          </Select>
+                  </Stack>
+      </Box>
       {renderContent()}
-
+      {editDialogOpen && selectedUser && (
       <EditUserDialog 
-        open={isEditDialogOpen}
-        user={editingUser}
-        onClose={() => setIsEditDialogOpen(false)}
+          open={editDialogOpen}
+          user={selectedUser}
+          onClose={() => setEditDialogOpen(false)}
         onSave={handleUpdateUser}
-        isSaving={isEditSaving}
+          isSaving={isSaving}
       />
-
+      )}
+      {deleteDialogOpen && selectedUser && (
       <DeleteUserDialog
-        open={!!deletingUser}
-        user={deletingUser}
-        onClose={() => setDeletingUser(null)}
+          open={deleteDialogOpen}
+          user={selectedUser}
+          onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
       />
-
-      {/* User Comments Modal */}
+      )}
+      {commentsModalOpen && selectedUser && (
       <UserCommentsModal 
-        open={isCommentsModalOpen}
-        userId={selectedUserForComments?.id ?? null}
-        username={selectedUserForComments?.username ?? null}
-        onClose={() => setIsCommentsModalOpen(false)} 
-      />
+          open={commentsModalOpen}
+          onClose={() => setCommentsModalOpen(false)}
+          userId={selectedUser.id}
+          username={selectedUser.username}
+        />
+      )}
     </Box>
   );
 };

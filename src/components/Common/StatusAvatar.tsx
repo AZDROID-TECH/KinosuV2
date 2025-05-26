@@ -41,39 +41,27 @@ const OfflineBadge = styled(Badge)(({ theme }) => ({
 }));
 
 interface StatusAvatarProps {
-  src?: string;
-  alt?: string;
-  isOnline?: boolean;
-  size?: number;
-  className?: string;
-  sx?: React.CSSProperties | any;
-  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  isOnline: boolean;
+  avatarUrl?: string | null;
+  username: string;
 }
 
-const StatusAvatar: React.FC<StatusAvatarProps> = ({
-  src,
-  alt = 'İstifadəçi avatarı',
-  isOnline = false,
-  size = 40,
-  className,
-  sx,
-  onClick,
-}) => {
+const StatusAvatar: React.FC<StatusAvatarProps> = ({ isOnline, avatarUrl, username }) => {
   const BadgeComponent = isOnline ? StyledBadge : OfflineBadge;
-
   return (
     <BadgeComponent
       overlap="circular"
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       variant="dot"
     >
-      <Avatar 
-        src={src} 
-        alt={alt} 
-        sx={{ width: size, height: size, ...sx }} 
-        className={className}
-        onClick={onClick}
-      />
+      <Avatar
+        src={avatarUrl && avatarUrl !== '' ? avatarUrl : undefined}
+        alt={username}
+        sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 'bold', fontSize: '1rem' }}
+        className="status-avatar"
+      >
+        {username?.[0]?.toUpperCase()}
+      </Avatar>
     </BadgeComponent>
   );
 };

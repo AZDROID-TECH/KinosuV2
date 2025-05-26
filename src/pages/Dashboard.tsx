@@ -814,6 +814,7 @@ const Dashboard = () => {
         onDeleteMovie={handleDeleteMovie}
         skeletonCard={SkeletonCard}
         isMobile={isMobile}
+        onAddMovieClick={() => setOpenDialog(true)}
       />
 
       {filteredMovies.length > ITEMS_PER_PAGE && (

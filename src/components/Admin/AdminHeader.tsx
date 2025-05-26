@@ -138,10 +138,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onDrawerToggle }) => {
                             onClick={handleMenu}
                             color="inherit"
                         >
-                             <StatusAvatar 
-                                src={avatar || undefined} 
-                                alt={username || 'Admin'} 
-                                size={32}
+                             <StatusAvatar
+                                avatarUrl={avatar || undefined}
+                                username={username || "Admin"}
                                 isOnline={userId ? isUserOnline(userId) : false}
                              />
                         </IconButton>

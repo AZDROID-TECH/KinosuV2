@@ -245,10 +245,13 @@ const MobileBottomMenu: React.FC = () => {
             }}
           >
             <StatusAvatar
-              src={avatar ? avatar : undefined}
-              alt="Profil"
-              size={28}
+              avatarUrl={avatar || undefined}
+              username={username || "İstifadəçi"}
               isOnline={userId ? isUserOnline(userId) : false}
+              sx={{ 
+                mb: 1.5,
+                border: `3px solid ${theme.palette.mode === 'dark' ? alpha('#9c27b0', 0.5) : alpha('#3f51b5', 0.3)}`,
+              }}
             />
           </Box>
         </Box>
@@ -308,9 +311,8 @@ const MobileBottomMenu: React.FC = () => {
             }}
           >
             <StatusAvatar
-              src={avatar ? avatar : undefined}
-              alt={username || "İstifadəçi"}
-              size={80}
+              avatarUrl={avatar || undefined}
+              username={username || "İstifadəçi"}
               isOnline={userId ? isUserOnline(userId) : false}
               sx={{ 
                 mb: 1.5,

@@ -154,15 +154,20 @@ const LandingPage = () => {
               sx={{
                 fontWeight: 700,
                 color: theme.palette.text.primary,
-                fontSize: { xs: '2.0rem', sm: '3rem', md: '4rem' },
-                lineHeight: { xs: 1.2, sm: 1.3 },
+                fontSize: { xs: '1.3rem', sm: '2.1rem', md: '3.2rem', lg: '3.8rem' },
+                lineHeight: { xs: 1.15, md: 1.18 },
                 mb: { xs: 2, md: 3 },
                 textShadow: theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.5)' : 'none',
+                letterSpacing: 0.5,
+                maxWidth: '100%',
+                whiteSpace: { xs: 'nowrap', sm: 'nowrap', md: 'normal' },
+                overflow: { xs: 'hidden', sm: 'hidden', md: 'visible' },
+                textOverflow: { xs: 'ellipsis', sm: 'ellipsis', md: 'unset' },
               }}
             >
-              Sosial Film
-              <br />
-              Platforması
+              <span className="desktop-break">
+                Sosial Film{typeof window !== 'undefined' && window.innerWidth >= 900 ? <br /> : ' '}Platforması
+              </span>
             </Typography>
             <Typography 
               variant="h6" 
