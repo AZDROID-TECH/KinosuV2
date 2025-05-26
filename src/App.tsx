@@ -5,11 +5,12 @@ import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Context Providers
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider as CustomThemeProvider } from './context/ThemeContext';
 import { FriendProvider } from './context/FriendContext';
 import { OnlineStatusProvider } from './context/OnlineStatusContext';
 import { HeaderMenuProvider } from './context/HeaderMenuContext';
+import { SocketProvider } from './context/SocketContext';
 
 // Components
 import Header from './components/Header';
@@ -49,6 +50,7 @@ const LoadingFallback = () => (
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const location = useLocation();
+  const { userId } = useAuth();
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
@@ -61,46 +63,47 @@ const AppContent = () => {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
-    <div className="app-container">
-      {!isAdminRoute && <Header />}
-      <Sidebar open={sidebarOpen} onClose={handleSidebarClose} variant="temporary" />
-      <main style={{ height: isAdminRoute ? '100vh' : 'auto' }}>
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/user/:userId" element={<UserProfilePage />} />
-            <Route path="/user/username/:username" element={<UserProfilePage />} />
-            <Route path="/movie/:movieId" element={<MovieDetails />} />
-            <Route path="/newsletters" element={<NewslettersPage />} />
-            <Route path="/newsletters/:id" element={<NewsletterDetailPage />} />
-            
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/friends" element={<FriendsPage />} />
-            </Route>
-            
-            <Route path="/admin" element={<AdminRoute />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<AdminHomePage />} />
-                <Route path="users" element={<AdminUsersPage />} />
-                <Route path="comments" element={<ManageCommentsPage />} />
-                <Route path="newsletters" element={<AdminNewslettersPage />} />
+    <SocketProvider key={userId || 'no-user'}>
+      <div className="app-container">
+        {!isAdminRoute && <Header />}
+        <Sidebar open={sidebarOpen} onClose={handleSidebarClose} variant="temporary" />
+        <main style={{ height: isAdminRoute ? '100vh' : 'auto' }}>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/user/:userId" element={<UserProfilePage />} />
+              <Route path="/user/username/:username" element={<UserProfilePage />} />
+              <Route path="/movie/:movieId" element={<MovieDetails />} />
+              <Route path="/newsletters" element={<NewslettersPage />} />
+              <Route path="/newsletters/:id" element={<NewsletterDetailPage />} />
+              
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/friends" element={<FriendsPage />} />
               </Route>
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </main>
-      {!isAdminRoute && <Footer />}
-      <MobileBottomMenu />
-      <CustomToastContainer />
-    </div>
+              
+              <Route path="/admin" element={<AdminRoute />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<AdminHomePage />} />
+                  <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="comments" element={<ManageCommentsPage />} />
+                  <Route path="newsletters" element={<AdminNewslettersPage />} />
+                </Route>
+              </Route>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </main>
+        {!isAdminRoute && <Footer />}
+        <MobileBottomMenu />
+        <CustomToastContainer />
+      </div>
+    </SocketProvider>
   );
 }
 
