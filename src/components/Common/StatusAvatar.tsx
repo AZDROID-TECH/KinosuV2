@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar, Badge, styled } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
 
 // Durum indikatörü için badge stili
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -44,9 +45,10 @@ interface StatusAvatarProps {
   isOnline: boolean;
   avatarUrl?: string | null;
   username: string;
+  sx?: SxProps<Theme>;
 }
 
-const StatusAvatar: React.FC<StatusAvatarProps> = ({ isOnline, avatarUrl, username }) => {
+const StatusAvatar: React.FC<StatusAvatarProps> = ({ isOnline, avatarUrl, username, sx }) => {
   const BadgeComponent = isOnline ? StyledBadge : OfflineBadge;
   return (
     <BadgeComponent
@@ -57,7 +59,14 @@ const StatusAvatar: React.FC<StatusAvatarProps> = ({ isOnline, avatarUrl, userna
       <Avatar
         src={avatarUrl && avatarUrl !== '' ? avatarUrl : undefined}
         alt={username}
-        sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 'bold', fontSize: '1rem' }}
+        sx={{
+          width: 36,
+          height: 36,
+          bgcolor: 'primary.main',
+          fontWeight: 'bold',
+          fontSize: '1rem',
+          ...sx,
+        }}
         className="status-avatar"
       >
         {username?.[0]?.toUpperCase()}

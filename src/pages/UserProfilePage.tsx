@@ -397,10 +397,11 @@ const UserProfilePage: React.FC = () => {
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Box sx={{ position: 'relative', mb: 2 }}>
-                <StatusAvatar
+                <StatusAvatar 
+                  isOnline={isUserOnline(profile.id)}
                   avatarUrl={profile.avatar || undefined}
                   username={profile.username}
-                  isOnline={isUserOnline(profile.id)}
+                  sx={{ width: 120, height: 120 }}
                 />
               </Box>
               

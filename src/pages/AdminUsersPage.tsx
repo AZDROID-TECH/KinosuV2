@@ -374,10 +374,22 @@ const AdminUsersPage = () => {
                 return (
                   <TableRow key={user.id} hover sx={{ '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) } }}>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <StatusAvatar isOnline={isOnline} avatarUrl={user.avatar_url} username={user.username} />
-                        <Typography variant="body2" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: { xs: '0.95rem', sm: '1rem' } }}>{user.username}</Typography>
-              </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <StatusAvatar 
+                          isOnline={onlineUsers.includes(user.id)}
+                          avatarUrl={user.avatar_url}
+                          username={user.username}
+                          sx={{ width: 32, height: 32, mr: 1 }}
+                        />
+                        <Link 
+                          to={`/user/${user.id}`} 
+                          style={{ textDecoration: 'none', color: 'inherit' }}
+                        >
+                          <Typography variant="body2" fontWeight="bold">
+                            {user.username}
+                          </Typography>
+                        </Link>
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '4px' }}>
@@ -452,9 +464,14 @@ const AdminUsersPage = () => {
             const isOnline = onlineUsers.includes(user.id);
             return (
               <Paper key={user.id} sx={{ p: 2, boxShadow: 2, borderRadius: 2, transition: 'all 0.3s', '&:hover': { boxShadow: 6, bgcolor: alpha(theme.palette.primary.main, 0.05) } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: 1 }}>
                   <StatusAvatar isOnline={isOnline} avatarUrl={user.avatar_url} username={user.username} />
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{user.username}</Typography>
+                  <Link 
+                    to={`/user/${user.id}`} 
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{user.username}</Typography>
+                  </Link>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', mb: '4px' }}>
                   <MailOutlineIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: '4px' }} />

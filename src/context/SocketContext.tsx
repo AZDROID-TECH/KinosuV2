@@ -118,14 +118,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     return userLastSeen[id] || null;
   }, [userLastSeen, isUserOnline]);
   const formatLastSeen = (date: Date | null) => {
-    if (!date) return 'Bilinmir';
+    if (!date) return 'Yaxınlarda';
     const now = new Date();
     const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
     if (diffMinutes < 1) return 'Az öncə';
     if (diffMinutes < 60) return `${diffMinutes} dəqiqə əvvəl`;
     if (diffMinutes < 60 * 24) return `${Math.floor(diffMinutes / 60)} saat əvvəl`;
     if (diffMinutes < 60 * 24 * 7) return `${Math.floor(diffMinutes / (60 * 24))} gün əvvəl`;
-    return date.toLocaleDateString('az-AZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    // İstənilən format: DD.MM.YYYY HH:mm
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
   };
   const requestUserLastSeen = useCallback((targetUserId: number) => {
     if (!socket || !socket.connected) return;
